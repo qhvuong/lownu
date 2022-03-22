@@ -12,6 +12,7 @@ class TemplateFitter {
     ~TemplateFitter(){};
     void setEnergyBins(double bins[481]);
     void setCovmtr(double bincontent[301][301]);
+    void setPara(int para[3]);
     //bool doFit(double &Uee2, double &Umm2, double &dm2);
     //void Draw(double Uee2, double Umm2, double dm2);
     void Draw();
@@ -35,6 +36,7 @@ class TemplateFitter {
     TH1D * nue_w_e_templates[480];
     // define the energy bins used in the template
     double m_energy_bins[481];
+    int tf_para[3];
     // this is the thing you are trying to fit to, i.e. the data distribution
     TH1D * CC_m_target;
     TH1D * CC_e_target;

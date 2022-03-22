@@ -1,6 +1,6 @@
 static const int N = 10000; // number of universes
 static const int nbins = 52;
-static const int nbins_Elep = 100;
+static const int nbins_E = 100;
 
 const int n_mu = 19; // number of muon bins in covariance
 const int n_e = 7; // number of electron bins in covariance
@@ -13,7 +13,7 @@ void EvCov()
 {
 
   // covariance matrix
-  TFile * covfile = new TFile( "/dune/app/users/qvuong/lownu_analysis/cov_matrix/total_covariance_DUNE_opt.root", "OLD" );
+  TFile * covfile = new TFile( "/dune/app/users/qvuong/lownu/cov_matrix/total_covariance_DUNE_opt.root", "OLD" );
   TH2D * hcovmx = (TH2D*) covfile->Get( "total_covariance" );
 
   // only need the ND FHC part, which is the first 52 bins probably
@@ -78,57 +78,51 @@ void EvCov()
 
   scales *= chol;
 
-  int cutEv = 2;
-  TFile *f = new TFile("/dune/app/users/qvuong/lownu_analysis/gen_data/CC/output_2.root");
-  TFile *f_nue = new TFile("/dune/app/users/qvuong/lownu_analysis/gen_data/nuescattering/nue_output_2.root");
-  TH2D *CC_m0 = (TH2D*)f->Get("m_hEvRecoVsEv0_cov");
-  TH2D *CC_m3 = (TH2D*)f->Get("m_hEvRecoVsEv3_cov");
-  TH2D *CC_e0 = (TH2D*)f->Get("e_hEvRecoVsEv0_cov");
-  TH2D *CC_e3 = (TH2D*)f->Get("e_hEvRecoVsEv3_cov");
+  char name[20] = "EvReco";
+  int para, cutNu, cutEv;
+  para = 2;
+  //for(para = 1; para <3; para++) {
+  TFile *f     = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",para));
+  TFile *f_nue = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",para));
+  //for(cutNu = 0; cutNu < 4; cutNu++) {
+  //if(cutNu != 0 && cutNu != 3 ) continue;
+  cutNu = 3;
+  for(cutEv = 0; cutEv < 3; cutEv++) {
+  TH2D *CC_m  = (TH2D*)f->Get(Form("m_hEvRecoVsEv%d_cov",cutNu));
+  TH2D *CC_e  = (TH2D*)f->Get(Form("e_hEvRecoVsEv%d_cov",cutNu));
   TH2D *nue_m = (TH2D*)f_nue->Get(Form("m_hEvRecoVsEv%d_cov",cutEv));
   TH2D *nue_e = (TH2D*)f_nue->Get(Form("e_hEvRecoVsEv%d_cov",cutEv));
-  TH1D *tp_m0[n_mu];
-  TH1D *tp_m3[n_mu];
-  TH1D *tp_e0[n_e];
-  TH1D *tp_e3[n_e];
+
+  TH1D *tp_m[n_mu];
+  TH1D *tp_e[n_e];
   TH1D *tp_m_nue[n_mu];
   TH1D *tp_e_nue[n_e];
 
-  std::cout << CC_m0->GetNbinsY() << "\n";
-
   for(int mb=0; mb<n_mu; mb++){
-    tp_m0[mb] = (TH1D*)CC_m0->ProjectionY(Form("m_bin0%d",mb+1),mb+1,mb+1);
-    tp_m3[mb] = (TH1D*)CC_m3->ProjectionY(Form("m_bin3%d",mb+1),mb+1,mb+1);
+    tp_m[mb]     = (TH1D*)CC_m->ProjectionY(Form("m_bin%d",mb+1),mb+1,mb+1);
     tp_m_nue[mb] = (TH1D*)nue_m->ProjectionY(Form("m_bin_nue%d",mb+1),mb+1,mb+1);
   }
   for(int eb=0; eb<n_e; eb++){
-    tp_e0[eb] = (TH1D*)CC_e0->ProjectionY(Form("e_bin0%d",eb+1),eb+1,eb+1);
-    tp_e3[eb] = (TH1D*)CC_e3->ProjectionY(Form("e_bin3%d",eb+1),eb+1,eb+1);
+    tp_e[eb]     = (TH1D*)CC_e->ProjectionY(Form("e_bin%d",eb+1),eb+1,eb+1);
     tp_e_nue[eb] = (TH1D*)nue_e->ProjectionY(Form("e_bin_nue%d",eb+1),eb+1,eb+1);
   }
 
-  TH1D *m0 = new TH1D("m0","",100,0,120);
-  TH1D *m3 = new TH1D("m3","",100,0,120);
-  TH1D *e0 = new TH1D("e0","",100,0,120);
-  TH1D *e3 = new TH1D("e3","",100,0,120);
-  TH1D *m_nue = new TH1D("m_nue","",100,0,120);
-  TH1D *e_nue = new TH1D("e_nue","",100,0,120);
-  TH1D *nue = new TH1D("nue","",100,0,120);
-  TH1D *CC_m0_nom = new TH1D("CC_m0_nom","",100,0,120);
-  TH1D *CC_m3_nom = new TH1D("CC_m3_nom3","",100,0,120);
-  TH1D *CC_e0_nom = new TH1D("CC_e0_nom","",100,0,120);
-  TH1D *CC_e3_nom = new TH1D("CC_e3_nom","",100,0,120);
-  TH1D *nue_m_nom = new TH1D("nue_m_nom","",100,0,120);
-  TH1D *nue_e_nom = new TH1D("nue_e_nom","",100,0,120);
-  TH1D *nue_nom = new TH1D("nue_nom","",100,0,120);
+  TH1D *m     = new TH1D("m","",100,0,20);
+  TH1D *e     = new TH1D("e","",100,0,20);
+  TH1D *m_nue = new TH1D("m_nue","",100,0,20);
+  TH1D *e_nue = new TH1D("e_nue","",100,0,20);
+  TH1D *nue   = new TH1D("nue","",100,0,20);
+  TH1D *CC_m_nom  = new TH1D("CC_m_nom","",100,0,20);
+  TH1D *CC_e_nom  = new TH1D("CC_e_nom","",100,0,20);
+  TH1D *nue_m_nom = new TH1D("nue_m_nom","",100,0,20);
+  TH1D *nue_e_nom = new TH1D("nue_e_nom","",100,0,20);
+  TH1D *nue_nom   = new TH1D("nue_nom","",100,0,20);
 
-  TMatrixD Elep_m0(N, nbins_Elep);
-  TMatrixD Elep_m3(N, nbins_Elep);
-  TMatrixD Elep_e0(N, nbins_Elep);
-  TMatrixD Elep_e3(N, nbins_Elep);
-  TMatrixD Elep_m_nue(N, nbins_Elep);
-  TMatrixD Elep_e_nue(N, nbins_Elep);
-  TMatrixD Elep_nue(N, nbins_Elep);
+  TMatrixD E_m(N, nbins_E);
+  TMatrixD E_e(N, nbins_E);
+  TMatrixD E_m_nue(N, nbins_E);
+  TMatrixD E_e_nue(N, nbins_E);
+  TMatrixD E_nue(N, nbins_E);
 /*
   TCanvas *c = new TCanvas("c","",800,800);
   //TCanvas *c_m3 = new TCanvas("c_m3","",800,800);
@@ -143,17 +137,13 @@ void EvCov()
   pad2->Draw();
 */
   for( int u = 0; u < N; ++u ) {
-    m0->Reset();
-    m3->Reset();
-    e0->Reset();
-    e3->Reset();
+    m->Reset();
+    e->Reset();
     m_nue->Reset();
     e_nue->Reset();
     nue->Reset();
-    CC_m0_nom->Reset();
-    CC_m3_nom->Reset();
-    CC_e0_nom->Reset();
-    CC_e3_nom->Reset();
+    CC_m_nom->Reset();
+    CC_e_nom->Reset();
     nue_m_nom->Reset();
     nue_e_nom->Reset();
     nue_nom->Reset();
@@ -162,41 +152,33 @@ void EvCov()
       int fluxbin = mb+1;
       double evtwgt = scales[u][fluxbin];
 
-      m0->Add(tp_m0[mb],1.+evtwgt);
-      m3->Add(tp_m3[mb],1.+evtwgt);
+      m->Add(tp_m[mb],1.+evtwgt);
       m_nue->Add(tp_m_nue[mb],1.+evtwgt);
 
-      CC_m0_nom->Add(tp_m0[mb], 1.);
-      CC_m3_nom->Add(tp_m3[mb], 1.);
+      CC_m_nom->Add(tp_m[mb], 1.);
       nue_m_nom->Add(tp_m_nue[mb],1.);
     }
     for(int eb=0; eb<n_e; eb++) {
       int fluxbin = 38+eb+1;
       double evtwgt = scales[u][fluxbin];
 
-      e0->Add(tp_e0[eb],1.+evtwgt);
-      e3->Add(tp_e3[eb],1.+evtwgt);
+      e->Add(tp_e[eb],1.+evtwgt);
       e_nue->Add(tp_e_nue[eb],1.+evtwgt);
 
-      CC_e0_nom->Add(tp_e0[eb], 1.);
-      CC_e3_nom->Add(tp_e3[eb], 1.);
+      CC_e_nom->Add(tp_e[eb], 1.);
       nue_e_nom->Add(tp_e_nue[eb],1.);
     }
     
-    nue->Add(m_nue); nue->Add(e_nue);
+    nue->Add(m_nue);         nue->Add(e_nue);
     nue_nom->Add(nue_m_nom); nue_nom->Add(nue_e_nom);
-    //std::cout << m0->GetBinLowEdge(100) << "\n";
 
     for(int i=0; i<100; i++){
-      Elep_m0[u][i] = m0->GetBinContent(i+1);
-      Elep_m3[u][i] = m3->GetBinContent(i+1);
-      Elep_e0[u][i] = e0->GetBinContent(i+1);
-      Elep_e3[u][i] = e3->GetBinContent(i+1);
-      Elep_m_nue[u][i] = m_nue->GetBinContent(i+1);
-      Elep_e_nue[u][i] = e_nue->GetBinContent(i+1);
-      Elep_nue[u][i] = nue->GetBinContent(i+1);
+      E_m[u][i]     = m->GetBinContent(i+1);
+      E_e[u][i]     = e->GetBinContent(i+1);
+      E_m_nue[u][i] = m_nue->GetBinContent(i+1);
+      E_e_nue[u][i] = e_nue->GetBinContent(i+1);
+      E_nue[u][i]   = nue->GetBinContent(i+1);
     }
-    //std::cout << CC_m0_nom->GetBinContent(48) << "\t" << Elep_CC_m0_nom[u][47] << "\n";
 /*
     if(u<20) {
 
@@ -256,269 +238,161 @@ void EvCov()
   //c->SaveAs("ratio_nue.png");
   //c_m3->SaveAs("ratio_CC_m3.png");
 
-  TMatrixD ElepCovars_m0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_m3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_m_nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e_nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_nue( nbins_Elep, nbins_Elep );
+  TMatrixD ECovars_m    ( nbins_E, nbins_E );
+  TMatrixD ECovars_e    ( nbins_E, nbins_E );
+  TMatrixD ECovars_m_nue( nbins_E, nbins_E );
+  TMatrixD ECovars_e_nue( nbins_E, nbins_E );
+  TMatrixD ECovars_nue  ( nbins_E, nbins_E );
 
-  TMatrixD ElepCovars_m0e0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_m0nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e0m0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e0nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_nuem0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_nuee0( nbins_Elep, nbins_Elep );
+  TMatrixD ECovars_me  ( nbins_E, nbins_E );
+  TMatrixD ECovars_mnue( nbins_E, nbins_E );
+  TMatrixD ECovars_em  ( nbins_E, nbins_E );
+  TMatrixD ECovars_enue( nbins_E, nbins_E );
+  TMatrixD ECovars_nuem( nbins_E, nbins_E );
+  TMatrixD ECovars_nuee( nbins_E, nbins_E );
 
-  TMatrixD ElepCovars_m3e3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_m3nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e3m3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_e3nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_nuem3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCovars_nuee3( nbins_Elep, nbins_Elep );
+  TMatrixD ECorrel_m  ( nbins_E, nbins_E );
+  TMatrixD ECorrel_e  ( nbins_E, nbins_E );
+  TMatrixD ECorrel_nue( nbins_E, nbins_E );
 
-  TMatrixD ElepCorrel_m0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_m3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_nue( nbins_Elep, nbins_Elep );
+  TMatrixD ECorrel_me  ( nbins_E, nbins_E );
+  TMatrixD ECorrel_mnue( nbins_E, nbins_E );
+  TMatrixD ECorrel_em  ( nbins_E, nbins_E );
+  TMatrixD ECorrel_enue( nbins_E, nbins_E );
+  TMatrixD ECorrel_nuem( nbins_E, nbins_E );
+  TMatrixD ECorrel_nuee( nbins_E, nbins_E );
 
-  TMatrixD ElepCorrel_m0e0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_m0nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e0m0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e0nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_nuem0( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_nuee0( nbins_Elep, nbins_Elep );
-
-  TMatrixD ElepCorrel_m3e3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_m3nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e3m3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_e3nue( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_nuem3( nbins_Elep, nbins_Elep );
-  TMatrixD ElepCorrel_nuee3( nbins_Elep, nbins_Elep );
-
-  for( int i = 0; i < nbins_Elep; ++i ) { // columns
-    for( int j = 0; j < nbins_Elep; ++j ) { // columns
+  for( int i = 0; i < nbins_E; ++i ) { // columns
+    for( int j = 0; j < nbins_E; ++j ) { // columns
       // compute column covariance
-      double covar_m0 = 0.;
-      double covar_m3 = 0.;
-      double covar_e0 = 0.;
-      double covar_e3 = 0.;
+      double covar_m = 0.;
+      double covar_e = 0.;
       double covar_m_nue = 0.;
       double covar_e_nue = 0.;
       double covar_nue = 0.;
-      double covar_m0e0 = 0.;
-      double covar_m0nue = 0.;
-      double covar_e0m0 = 0.;
-      double covar_e0nue = 0.;
-      double covar_nuem0 = 0.;
-      double covar_nuee0 = 0.;
-      double covar_m3e3 = 0.;
-      double covar_m3nue = 0.;
-      double covar_e3m3 = 0.;
-      double covar_e3nue = 0.;
-      double covar_nuem3 = 0.;
-      double covar_nuee3 = 0.;
+      double covar_me = 0.;
+      double covar_mnue = 0.;
+      double covar_em = 0.;
+      double covar_enue = 0.;
+      double covar_nuem = 0.;
+      double covar_nuee = 0.;
 
-      double var_m0_i = 0.;
-      double var_m3_i = 0.;
-      double var_m0_j = 0.;
-      double var_m3_j = 0.;
-      double var_e0_i = 0.;
-      double var_e3_i = 0.;
-      double var_e0_j = 0.;
-      double var_e3_j = 0.;
+      double var_m_i = 0.;
+      double var_m_j = 0.;
+      double var_e_i = 0.;
+      double var_e_j = 0.;
       double var_nue_i = 0.;
       double var_nue_j = 0.;
 
       for( int k = 0; k < N; ++k ) { // rows
-        covar_m0 += (Elep_m0[k][i] - CC_m0_nom->GetBinContent(i+1)) * (Elep_m0[k][j] - CC_m0_nom->GetBinContent(j+1));
-        covar_m3 += (Elep_m3[k][i] - CC_m3_nom->GetBinContent(i+1)) * (Elep_m3[k][j] - CC_m3_nom->GetBinContent(j+1));
-        covar_e0 += (Elep_e0[k][i] - CC_e0_nom->GetBinContent(i+1)) * (Elep_e0[k][j] - CC_e0_nom->GetBinContent(j+1)); 
-        covar_e3 += (Elep_e3[k][i] - CC_e3_nom->GetBinContent(i+1)) * (Elep_e3[k][j] - CC_e3_nom->GetBinContent(j+1)); 
-        covar_m_nue += (Elep_m_nue[k][i] - nue_m_nom->GetBinContent(i+1)) * (Elep_m_nue[k][j] - nue_m_nom->GetBinContent(j+1));
-        covar_e_nue += (Elep_e_nue[k][i] - nue_e_nom->GetBinContent(i+1)) * (Elep_e_nue[k][j] - nue_e_nom->GetBinContent(j+1)); 
-        covar_nue += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1)); 
+        covar_m     += (E_m[k][i]     - CC_m_nom->GetBinContent(i+1))  * (E_m[k][j]     - CC_m_nom->GetBinContent(j+1));
+        covar_e     += (E_e[k][i]     - CC_e_nom->GetBinContent(i+1))  * (E_e[k][j]     - CC_e_nom->GetBinContent(j+1)); 
+        covar_m_nue += (E_m_nue[k][i] - nue_m_nom->GetBinContent(i+1)) * (E_m_nue[k][j] - nue_m_nom->GetBinContent(j+1));
+        covar_e_nue += (E_e_nue[k][i] - nue_e_nom->GetBinContent(i+1)) * (E_e_nue[k][j] - nue_e_nom->GetBinContent(j+1)); 
+        covar_nue   += (E_nue[k][i]   - nue_nom->GetBinContent(i+1))   * (E_nue[k][j]   - nue_nom->GetBinContent(j+1)); 
 
-        covar_m0e0 += (Elep_m0[k][i] - CC_m0_nom->GetBinContent(i+1)) * (Elep_e0[k][j] - CC_e0_nom->GetBinContent(j+1));
-        covar_m0nue += (Elep_m0[k][i] - CC_m0_nom->GetBinContent(i+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1));
-        covar_e0m0 += (Elep_e0[k][i] - CC_e0_nom->GetBinContent(i+1)) * (Elep_m0[k][j] - CC_m0_nom->GetBinContent(j+1)); 
-        covar_e0nue += (Elep_e0[k][i] - CC_e0_nom->GetBinContent(i+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1)); 
-        covar_nuem0 += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_m0[k][j] - CC_m0_nom->GetBinContent(j+1)); 
-        covar_nuee0 += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_e0[k][j] - CC_e0_nom->GetBinContent(j+1)); 
+        covar_me   += (E_m[k][i]   - CC_m_nom->GetBinContent(i+1)) * (E_e[k][j]   - CC_e_nom->GetBinContent(j+1));
+        covar_mnue += (E_m[k][i]   - CC_m_nom->GetBinContent(i+1)) * (E_nue[k][j] - nue_nom->GetBinContent(j+1));
+        covar_em   += (E_e[k][i]   - CC_e_nom->GetBinContent(i+1)) * (E_m[k][j]   - CC_m_nom->GetBinContent(j+1)); 
+        covar_enue += (E_e[k][i]   - CC_e_nom->GetBinContent(i+1)) * (E_nue[k][j] - nue_nom->GetBinContent(j+1)); 
+        covar_nuem += (E_nue[k][i] - nue_nom->GetBinContent(i+1))  * (E_m[k][j]   - CC_m_nom->GetBinContent(j+1)); 
+        covar_nuee += (E_nue[k][i] - nue_nom->GetBinContent(i+1))  * (E_e[k][j]   - CC_e_nom->GetBinContent(j+1)); 
 
-        covar_m3e3 += (Elep_m3[k][i] - CC_m3_nom->GetBinContent(i+1)) * (Elep_e3[k][j] - CC_e3_nom->GetBinContent(j+1));
-        covar_m3nue += (Elep_m3[k][i] - CC_m3_nom->GetBinContent(i+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1));
-        covar_e3m3 += (Elep_e3[k][i] - CC_e3_nom->GetBinContent(i+1)) * (Elep_m3[k][j] - CC_m3_nom->GetBinContent(j+1)); 
-        covar_e3nue += (Elep_e3[k][i] - CC_e3_nom->GetBinContent(i+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1)); 
-        covar_nuem3 += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_m3[k][j] - CC_m3_nom->GetBinContent(j+1)); 
-        covar_nuee3 += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_e3[k][j] - CC_e3_nom->GetBinContent(j+1)); 
+        var_m_i += (E_m[k][i] - CC_m_nom->GetBinContent(i+1)) * (E_m[k][i] - CC_m_nom->GetBinContent(i+1));
+        var_m_j += (E_m[k][j] - CC_m_nom->GetBinContent(j+1)) * (E_m[k][j] - CC_m_nom->GetBinContent(j+1));
 
-        
-        var_m0_i += (Elep_m0[k][i] - CC_m0_nom->GetBinContent(i+1)) * (Elep_m0[k][i] - CC_m0_nom->GetBinContent(i+1));
-        var_m3_i += (Elep_m3[k][i] - CC_m3_nom->GetBinContent(i+1)) * (Elep_m3[k][i] - CC_m3_nom->GetBinContent(i+1));
-        var_m0_j += (Elep_m0[k][j] - CC_m0_nom->GetBinContent(j+1)) * (Elep_m0[k][j] - CC_m0_nom->GetBinContent(j+1));
-        var_m3_j += (Elep_m3[k][j] - CC_m3_nom->GetBinContent(j+1)) * (Elep_m3[k][j] - CC_m3_nom->GetBinContent(j+1));
+        var_e_i += (E_e[k][i] - CC_e_nom->GetBinContent(i+1)) * (E_e[k][i] - CC_e_nom->GetBinContent(i+1));
+        var_e_j += (E_e[k][j] - CC_e_nom->GetBinContent(j+1)) * (E_e[k][j] - CC_e_nom->GetBinContent(j+1));
 
-        var_e0_i += (Elep_e0[k][i] - CC_e0_nom->GetBinContent(i+1)) * (Elep_e0[k][i] - CC_e0_nom->GetBinContent(i+1));
-        var_e3_i += (Elep_e3[k][i] - CC_e3_nom->GetBinContent(i+1)) * (Elep_e3[k][i] - CC_e3_nom->GetBinContent(i+1));
-        var_e0_j += (Elep_e0[k][j] - CC_e0_nom->GetBinContent(j+1)) * (Elep_e0[k][j] - CC_e0_nom->GetBinContent(j+1));
-        var_e3_j += (Elep_e3[k][j] - CC_e3_nom->GetBinContent(j+1)) * (Elep_e3[k][j] - CC_e3_nom->GetBinContent(j+1));
-
-        var_nue_i += (Elep_nue[k][i] - nue_nom->GetBinContent(i+1)) * (Elep_nue[k][i] - nue_nom->GetBinContent(i+1));
-        var_nue_j += (Elep_nue[k][j] - nue_nom->GetBinContent(j+1)) * (Elep_nue[k][j] - nue_nom->GetBinContent(j+1));
+        var_nue_i += (E_nue[k][i] - nue_nom->GetBinContent(i+1)) * (E_nue[k][i] - nue_nom->GetBinContent(i+1));
+        var_nue_j += (E_nue[k][j] - nue_nom->GetBinContent(j+1)) * (E_nue[k][j] - nue_nom->GetBinContent(j+1));
       }
 
-      ElepCovars_m0[i][j] = covar_m0/(N * CC_m0_nom->GetBinContent(i+1) * CC_m0_nom->GetBinContent(j+1));
-      ElepCovars_m3[i][j] = covar_m3/(N * CC_m3_nom->GetBinContent(i+1) * CC_m3_nom->GetBinContent(j+1));
-      ElepCovars_e0[i][j] = covar_e0/(N * CC_e0_nom->GetBinContent(i+1) * CC_e0_nom->GetBinContent(j+1));
-      ElepCovars_e3[i][j] = covar_e3/(N * CC_e3_nom->GetBinContent(i+1) * CC_e3_nom->GetBinContent(j+1));
-      ElepCovars_m_nue[i][j] = covar_m_nue/(N * nue_m_nom->GetBinContent(i+1) * nue_m_nom->GetBinContent(j+1));
-      ElepCovars_e_nue[i][j] = covar_e_nue/(N * nue_e_nom->GetBinContent(i+1) * nue_e_nom->GetBinContent(j+1));
-      ElepCovars_nue[i][j] = covar_nue/(N * nue_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
+      ECovars_m[i][j]     = covar_m    /(N * CC_m_nom->GetBinContent(i+1)  * CC_m_nom->GetBinContent(j+1));
+      ECovars_e[i][j]     = covar_e    /(N * CC_e_nom->GetBinContent(i+1)  * CC_e_nom->GetBinContent(j+1));
+      ECovars_m_nue[i][j] = covar_m_nue/(N * nue_m_nom->GetBinContent(i+1) * nue_m_nom->GetBinContent(j+1));
+      ECovars_e_nue[i][j] = covar_e_nue/(N * nue_e_nom->GetBinContent(i+1) * nue_e_nom->GetBinContent(j+1));
+      ECovars_nue[i][j]   = covar_nue  /(N * nue_nom->GetBinContent(i+1)   * nue_nom->GetBinContent(j+1));
 
-      ElepCovars_m0e0[i][j] = covar_m0e0/(N * CC_m0_nom->GetBinContent(i+1) * CC_e0_nom->GetBinContent(j+1));
-      ElepCovars_m0nue[i][j] = covar_m0nue/(N * CC_m0_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
-      ElepCovars_e0m0[i][j] = covar_e0m0/(N * CC_e0_nom->GetBinContent(i+1) * CC_m0_nom->GetBinContent(j+1));
-      ElepCovars_e0nue[i][j] = covar_e0nue/(N * CC_e0_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
-      ElepCovars_nuem0[i][j] = covar_nuem0/(N * nue_nom->GetBinContent(i+1) * CC_m0_nom->GetBinContent(j+1));
-      ElepCovars_nuee0[i][j] = covar_nuee0/(N * nue_nom->GetBinContent(i+1) * CC_e0_nom->GetBinContent(j+1));
+      ECovars_me[i][j]   = covar_me  /(N * CC_m_nom->GetBinContent(i+1) * CC_e_nom->GetBinContent(j+1));
+      ECovars_mnue[i][j] = covar_mnue/(N * CC_m_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
+      ECovars_em[i][j]   = covar_em  /(N * CC_e_nom->GetBinContent(i+1) * CC_m_nom->GetBinContent(j+1));
+      ECovars_enue[i][j] = covar_enue/(N * CC_e_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
+      ECovars_nuem[i][j] = covar_nuem/(N * nue_nom->GetBinContent(i+1)  * CC_m_nom->GetBinContent(j+1));
+      ECovars_nuee[i][j] = covar_nuee/(N * nue_nom->GetBinContent(i+1)  * CC_e_nom->GetBinContent(j+1));
 
-      ElepCovars_m3e3[i][j] = covar_m3e3/(N * CC_m3_nom->GetBinContent(i+1) * CC_e3_nom->GetBinContent(j+1));
-      ElepCovars_m3nue[i][j] = covar_m3nue/(N * CC_m3_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
-      ElepCovars_e3m3[i][j] = covar_e3m3/(N * CC_e3_nom->GetBinContent(i+1) * CC_m3_nom->GetBinContent(j+1));
-      ElepCovars_e3nue[i][j] = covar_e3nue/(N * CC_e3_nom->GetBinContent(i+1) * nue_nom->GetBinContent(j+1));
-      ElepCovars_nuem3[i][j] = covar_nuem3/(N * nue_nom->GetBinContent(i+1) * CC_m3_nom->GetBinContent(j+1));
-      ElepCovars_nuee3[i][j] = covar_nuee3/(N * nue_nom->GetBinContent(i+1) * CC_e3_nom->GetBinContent(j+1));
+      ECorrel_m[i][j]   = covar_m  /sqrt(var_m_i   * var_m_j);
+      ECorrel_e[i][j]   = covar_e  /sqrt(var_e_i   * var_e_j);
+      ECorrel_nue[i][j] = covar_nue/sqrt(var_nue_i * var_nue_j);
 
-
-      ElepCorrel_m0[i][j] = covar_m0/sqrt(var_m0_i * var_m0_j);
-      ElepCorrel_m3[i][j] = covar_m3/sqrt(var_m3_i * var_m3_j);
-      ElepCorrel_e0[i][j] = covar_e0/sqrt(var_e0_i * var_e0_j);
-      ElepCorrel_e3[i][j] = covar_e3/sqrt(var_e3_i * var_e3_j);
-      ElepCorrel_nue[i][j] = covar_nue/sqrt(var_nue_i * var_nue_j);
-
-      ElepCorrel_m0e0[i][j] = covar_m0e0/sqrt(var_m0_i * var_e0_j);
-      ElepCorrel_m0nue[i][j] = covar_m0nue/sqrt(var_m0_i * var_nue_j);
-      ElepCorrel_e0m0[i][j] = covar_e0m0/sqrt(var_e0_i * var_m0_j);
-      ElepCorrel_e0nue[i][j] = covar_e0nue/sqrt(var_e0_i * var_nue_j);
-      ElepCorrel_nuem0[i][j] = covar_nuem0/sqrt(var_nue_i * var_m0_j);
-      ElepCorrel_nuee0[i][j] = covar_nuee0/sqrt(var_nue_i * var_e0_j);
-
-      ElepCorrel_m3e3[i][j] = covar_m3e3/sqrt(var_m3_i * var_e3_j);
-      ElepCorrel_m3nue[i][j] = covar_m3nue/sqrt(var_m3_i * var_nue_j);
-      ElepCorrel_e3m3[i][j] = covar_e3m3/sqrt(var_e3_i * var_m3_j);
-      ElepCorrel_e3nue[i][j] = covar_e3nue/sqrt(var_e3_i * var_nue_j);
-      ElepCorrel_nuem3[i][j] = covar_nuem3/sqrt(var_nue_i * var_m3_j);
-      ElepCorrel_nuee3[i][j] = covar_nuee3/sqrt(var_nue_i * var_e3_j);
+      ECorrel_me[i][j]   = covar_me  /sqrt(var_m_i   * var_e_j);
+      ECorrel_mnue[i][j] = covar_mnue/sqrt(var_m_i   * var_nue_j);
+      ECorrel_em[i][j]   = covar_em  /sqrt(var_e_i   * var_m_j);
+      ECorrel_enue[i][j] = covar_enue/sqrt(var_e_i   * var_nue_j);
+      ECorrel_nuem[i][j] = covar_nuem/sqrt(var_nue_i * var_m_j);
+      ECorrel_nuee[i][j] = covar_nuee/sqrt(var_nue_i * var_e_j);
     }
   }
 
-  TMatrixD ElepCovars0( 3*nbins_Elep, 3*nbins_Elep );
-  TMatrixD ElepCovars3( 3*nbins_Elep, 3*nbins_Elep );
-  TMatrixD ElepCorrel0( 3*nbins_Elep, 3*nbins_Elep );
-  TMatrixD ElepCorrel3( 3*nbins_Elep, 3*nbins_Elep );
+  TMatrixD ECovars( 3*nbins_E, 3*nbins_E );
+  TMatrixD ECorrel( 3*nbins_E, 3*nbins_E );
 
-  for(int i = 0; i < nbins_Elep; i++) {
-    for(int j = 0; j < nbins_Elep; j++) {
-      ElepCovars0[i][j] = ElepCovars_m0[i][j];
-      ElepCovars0[i][j+nbins_Elep] = ElepCovars_m0e0[i][j];
-      ElepCovars0[i][j+2*nbins_Elep] = ElepCovars_m0nue[i][j];
-      ElepCovars3[i][j] = ElepCovars_m3[i][j];
-      ElepCovars3[i][j+nbins_Elep] = ElepCovars_m3e3[i][j];
-      ElepCovars3[i][j+2*nbins_Elep] = ElepCovars_m3nue[i][j];
+  for(int i = 0; i < nbins_E; i++) {
+    for(int j = 0; j < nbins_E; j++) {
+      ECovars[i][j]           = ECovars_m[i][j];
+      ECovars[i][j+nbins_E]   = ECovars_me[i][j];
+      ECovars[i][j+2*nbins_E] = ECovars_mnue[i][j];
 
-      ElepCovars0[i+nbins_Elep][j] = ElepCovars_e0m0[i][j];
-      ElepCovars0[i+nbins_Elep][j+nbins_Elep] = ElepCovars_e0[i][j];
-      ElepCovars0[i+nbins_Elep][j+2*nbins_Elep] = ElepCovars_e0nue[i][j];
-      ElepCovars3[i+nbins_Elep][j] = ElepCovars_e3m3[i][j];
-      ElepCovars3[i+nbins_Elep][j+nbins_Elep] = ElepCovars_e3[i][j];
-      ElepCovars3[i+nbins_Elep][j+2*nbins_Elep] = ElepCovars_e3nue[i][j];
+      ECovars[i+nbins_E][j]           = ECovars_em[i][j];
+      ECovars[i+nbins_E][j+nbins_E]   = ECovars_e[i][j];
+      ECovars[i+nbins_E][j+2*nbins_E] = ECovars_enue[i][j];
 
-      ElepCovars0[i+2*nbins_Elep][j] = ElepCovars_nuem0[i][j];
-      ElepCovars0[i+2*nbins_Elep][j+nbins_Elep] = ElepCovars_nuee0[i][j];
-      ElepCovars0[i+2*nbins_Elep][j+2*nbins_Elep] = ElepCovars_nue[i][j];
-      ElepCovars3[i+2*nbins_Elep][j] = ElepCovars_nuem3[i][j];
-      ElepCovars3[i+2*nbins_Elep][j+nbins_Elep] = ElepCovars_nuee3[i][j];
-      ElepCovars3[i+2*nbins_Elep][j+2*nbins_Elep] = ElepCovars_nue[i][j];
+      ECovars[i+2*nbins_E][j]           = ECovars_nuem[i][j];
+      ECovars[i+2*nbins_E][j+nbins_E]   = ECovars_nuee[i][j];
+      ECovars[i+2*nbins_E][j+2*nbins_E] = ECovars_nue[i][j];
 
 
-      ElepCorrel0[i][j] = ElepCorrel_m0[i][j];
-      ElepCorrel0[i][j+nbins_Elep] = ElepCorrel_m0e0[i][j];
-      ElepCorrel0[i][j+2*nbins_Elep] = ElepCorrel_m0nue[i][j];
-      ElepCorrel3[i][j] = ElepCorrel_m3[i][j];
-      ElepCorrel3[i][j+nbins_Elep] = ElepCorrel_m3e3[i][j];
-      ElepCorrel3[i][j+2*nbins_Elep] = ElepCorrel_m3nue[i][j];
+      ECorrel[i][j]           = ECorrel_m[i][j];
+      ECorrel[i][j+nbins_E]   = ECorrel_me[i][j];
+      ECorrel[i][j+2*nbins_E] = ECorrel_mnue[i][j];
 
-      ElepCorrel0[i+nbins_Elep][j] = ElepCorrel_e0m0[i][j];
-      ElepCorrel0[i+nbins_Elep][j+nbins_Elep] = ElepCorrel_e0[i][j];
-      ElepCorrel0[i+nbins_Elep][j+2*nbins_Elep] = ElepCorrel_e0nue[i][j];
-      ElepCorrel3[i+nbins_Elep][j] = ElepCorrel_e3m3[i][j];
-      ElepCorrel3[i+nbins_Elep][j+nbins_Elep] = ElepCorrel_e3[i][j];
-      ElepCorrel3[i+nbins_Elep][j+2*nbins_Elep] = ElepCorrel_e3nue[i][j];
+      ECorrel[i+nbins_E][j]           = ECorrel_em[i][j];
+      ECorrel[i+nbins_E][j+nbins_E]   = ECorrel_e[i][j];
+      ECorrel[i+nbins_E][j+2*nbins_E] = ECorrel_enue[i][j];
 
-      ElepCorrel0[i+2*nbins_Elep][j] = ElepCorrel_nuem0[i][j];
-      ElepCorrel0[i+2*nbins_Elep][j+nbins_Elep] = ElepCorrel_nuee0[i][j];
-      ElepCorrel0[i+2*nbins_Elep][j+2*nbins_Elep] = ElepCorrel_nue[i][j];
-      ElepCorrel3[i+2*nbins_Elep][j] = ElepCorrel_nuem3[i][j];
-      ElepCorrel3[i+2*nbins_Elep][j+nbins_Elep] = ElepCorrel_nuee3[i][j];
-      ElepCorrel3[i+2*nbins_Elep][j+2*nbins_Elep] = ElepCorrel_nue[i][j];
+      ECorrel[i+2*nbins_E][j]           = ECorrel_nuem[i][j];
+      ECorrel[i+2*nbins_E][j+nbins_E]   = ECorrel_nuee[i][j];
+      ECorrel[i+2*nbins_E][j+2*nbins_E] = ECorrel_nue[i][j];
     }
   }
 
-      
-  TH2D *h_m0 = new TH2D(ElepCovars_m0);
-  TH2D *h_m3 = new TH2D(ElepCovars_m3);
-  TH2D *h_e0 = new TH2D(ElepCovars_e0);
-  TH2D *h_e3 = new TH2D(ElepCovars_e3);
-  TH2D *h_m_nue = new TH2D(ElepCovars_m_nue);
-  TH2D *h_e_nue = new TH2D(ElepCovars_e_nue);
-  TH2D *h_nue = new TH2D(ElepCovars_nue);
-  //TH2D *h0 = new TH2D(ElepCovars0);
-  //TH2D *h3 = new TH2D(ElepCovars3);
-
-  TH2D *hcr_m0 = new TH2D(ElepCorrel_m0);
-  TH2D *hcr_m3 = new TH2D(ElepCorrel_m3);
-  TH2D *hcr_e0 = new TH2D(ElepCorrel_e0);
-  TH2D *hcr_e3 = new TH2D(ElepCorrel_e3);
-  TH2D *hcr_nue = new TH2D(ElepCorrel_nue);
-  //TH2D *hcr0 = new TH2D(ElepCorrel0);
-  //TH2D *hcr3 = new TH2D(ElepCorrel3);
-
-  TH2D *h0 = new TH2D("h0","",300,0,300,300,0,300);
-  TH2D *h3 = new TH2D("h3","",300,0,300,300,0,300);
-  TH2D *hcr0 = new TH2D("hcr0","",300,0,300,300,0,300);
-  TH2D *hcr3 = new TH2D("hcr3","",300,0,300,300,0,300);
+  TH2D *hcv = new TH2D("hcv","",300,0,300,300,0,300);
+  TH2D *hcr = new TH2D("hcr","",300,0,300,300,0,300);
   for(int i=0; i<300; i++) {
     for(int j=0; j<300; j++) {
-      h0->SetBinContent(i+1, j+1, ElepCovars0[i][j]);
-      h3->SetBinContent(i+1, j+1, ElepCovars3[i][j]);
-
-      hcr0->SetBinContent(i+1, j+1, ElepCorrel0[i][j]);
-      hcr3->SetBinContent(i+1, j+1, ElepCorrel3[i][j]);
+      hcv->SetBinContent(i+1, j+1, ECovars[i][j]);
+      hcr->SetBinContent(i+1, j+1, ECorrel[i][j]);
     }
   }
  
   gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
 
-  h0->SetStats(0);
-  h0->SetTitle("EvReco Covariance (nu<10.0)");
-  h3->SetStats(0);
-  h3->SetTitle("EvReco Covariance (nu<0.3)");
+  double nu, Ev;
+  if(cutNu == 0)      nu = 10.0;
+  else if(cutNu == 3) nu = 0.3;
+  if(cutEv == 0)      Ev = 1.0;
+  else if(cutEv == 1) Ev = 0.8;
+  else if(cutEv == 2) Ev = 0.5;
 
-  hcr0->SetStats(0);
-  hcr0->SetTitle("EvReco Correlation (nu<10.0)");
-  hcr3->SetStats(0);
-  hcr3->SetTitle("EvReco Correlation (nu<0.3)");
+  hcv->SetStats(0);
+  hcv->SetTitle(Form("%s Covariance (nu<%.1fGeV && Etheta2<%.1fMeV)",name,nu,Ev));
 
-  TCanvas *c1 = new TCanvas("c1","",1800,1350);
-  c1->Divide(2,1);
-  c1->cd(1);
-  h0->Draw("colz");
-  c1->cd(2);
-  h3->Draw("colz");
-  c1->SaveAs(Form("Ev_total_Cov%d_%d.png",cutEv,N));
+  hcr->SetStats(0);
+  hcr->SetTitle(Form("%s Correlation (nu<%.1fGeV && Etheta2<%.1fMeV)",name,nu,Ev));
+
+  TCanvas *ccv = new TCanvas("ccv","",900,800);
+  hcv->Draw("colz");
+  ccv->SaveAs(Form("%s_Cov%d%d%d_%d.png",name,para,cutNu,cutEv,N));
 
   const Int_t Number = 3;
   Double_t Red[Number]    = { 0.00, 1.00, 1.00};
@@ -528,23 +402,18 @@ void EvCov()
   Int_t nb=50;
   TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue,nb);
 
-  TCanvas *ccr1 = new TCanvas("ccr1","",1800,1350);
-  ccr1->Divide(2,1);
-  ccr1->cd(1);
-  hcr0->GetZaxis()->SetRangeUser(-1., 1.);
-  hcr0->Draw("colz");
-  ccr1->cd(2);
-  hcr3->GetZaxis()->SetRangeUser(-1., 1.);
-  hcr3->Draw("colz");
-  ccr1->SaveAs(Form("Ev_total_Cor%d_%d.png",cutEv,N));
+  TCanvas *ccr = new TCanvas("ccr","",900,800);
+  hcr->GetZaxis()->SetRangeUser(-1., 1.);
+  hcr->Draw("colz");
+  ccr->SaveAs(Form("%s_Cor%d%d%d_%d.png",name,para,cutNu,cutEv,N));
 
-  TFile *out = new TFile(Form("/dune/app/users/qvuong/lownu_analysis/cov_matrix/Ev_cov%d_%d.root",cutEv,N),"RECREATE");
-  h0->Write();
-  h3->Write();
-  hcr0->Write();
-  hcr3->Write();
+  TFile *out = new TFile(Form("/dune/app/users/qvuong/lownu/cov_matrix/%s_covmtr%d%d%d_%d.root",name,para,cutNu,cutEv,N),"RECREATE");
+  hcv->Write();
+  hcr->Write();
   out->Close();
-
+  //}
+  //}
+  }
 }
 
 /*

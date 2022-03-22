@@ -12,7 +12,7 @@
 #include "TDecompSVD.h"
 #include "TGraph.h"
 
-TemplateFitter::TemplateFitter(TH1D * CC_templates_m[480], TH1D * CC_templates_m_nc[480], TH1D * CC_templates_e[480], TH1D * nue_templates_m[480], TH1D * nue_templates_m_w[480], TH1D * nue_templates_e[480], TH1D * nue_templates_e_w[480], TH1D * CC_target_e, TH1D * CC_target_m, TH1D * nue_target)
+TemplateFitter::TemplateFitter(TH1D * CC_templates_m[480], TH1D * CC_templates_m_nc[480], TH1D * CC_templates_e[480], TH1D * nue_templates_m[480], TH1D * nue_templates_m_w[480], TH1D * nue_templates_e[480], TH1D * nue_templates_e_w[480], TH1D * CC_target_m, TH1D * CC_target_e, TH1D * nue_target)
 {
   for( int i = 0; i < 480; ++i ) {
   CC_m_templates[i] = CC_templates_m[i];
@@ -58,6 +58,13 @@ double TemplateFitter::getPmm( double energy, double Uee2, double Umm2, double d
   double s2mm2 = 4 * Umm2 * (1 - Umm2);
   double prob = 1.0 - s2mm2  * pow(sin(del),2);
   return prob;
+}
+
+void TemplateFitter::setPara( int para[3] )
+{
+  for(int i=0; i<3; i++) {
+    tf_para[i] = para[i];
+  }
 }
 
 TMatrixD covmtr(300,300);
@@ -211,22 +218,46 @@ double TemplateFitter::getChi2( double * par )
 
 void TemplateFitter::Draw()
 {
-  int N = 40;
-  int cutNo = 0;
-  int cutEv = 0;
+  char name[20] = "ElepReco";
+  int N = 50;
+  int para  = tf_para[0];
+  int cutNu = tf_para[1];
+  int cutEv = tf_para[2];
+  std::cout << para << "\t" << cutNu << "\t" << cutEv << "\n";
   TH2D *h0 = new TH2D("h0","",N,0,0.1, N,0,12.0);
   TH2D *h1 = new TH2D("h1","",N,0,12.0,N,0,0.1);
   TH2D *h2 = new TH2D("h2","",N,0,0.1, N,0,0.1);
+  TH2D *h0d = new TH2D("h0d","",N,0,0.1, N,0,12.0);
+  TH2D *h1d = new TH2D("h1d","",N,0,12.0,N,0,0.1);
+  TH2D *h2d = new TH2D("h2d","",N,0,0.1, N,0,0.1);
 
   double p0[1], p1[1], p2[1];
-  p0[0] = 0.01;
-  p1[0] = 0.0016;
-  p2[0] = 1.3;
-  double par[3];
-  par[0] = 0.0;
-  par[1] = 0.0;
-  par[2] = 0.0;
+  if(para == 1){
+    p0[0] = 0.01;
+    p1[0] = 0.0016;
+    p2[0] = 1.3;
+  }
+  else if(para == 2){
+    p0[0] = 0.04;
+    p1[0] = 0.01;
+    p2[0] = 6.0;
+  }
+  double par[3], bin[3];
+  par[0] = p0[0];
+  par[1] = p1[0];
+  par[2] = p2[0];
   double chi2 = 0.0;
+
+  double nu, Ev;
+  if(cutNu == 0)      nu = 10.0;
+  else if(cutNu == 3) nu = 0.3;
+
+  if(cutEv == 0)      Ev = 1.0;
+  else if(cutEv == 1) Ev = 0.8;
+  else if(cutEv == 2) Ev = 0.5;
+
+  double chi2t = getChi2(par);
+  double diff;
 
   par[0] = p0[0];
   for(int j=1; j<=N; j++) {
@@ -234,8 +265,10 @@ void TemplateFitter::Draw()
     for(int k=1; k<=N; k++) {
       par[2] = h1->GetXaxis()->GetBinCenter(k);
       chi2 = getChi2(par);
-      std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\n";
+      diff = sqrt(abs(chi2 - chi2t));
+      if( k==N ) std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\t" << diff << "\t" << j*k*100./(3*N*N) << "%" << "\n";
       h0->Fill(par[1], par[2], chi2);
+      h0d->Fill(par[1], par[2], diff);
     }
   }
 
@@ -245,8 +278,10 @@ void TemplateFitter::Draw()
     for(int i=1; i<=N; i++) {
       par[0] = h2->GetXaxis()->GetBinCenter(i);
       chi2 = getChi2(par);
-      std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\n";
+      diff = sqrt(abs(chi2 - chi2t));
+      if( i==N ) std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\t" << diff << "\t" << (N*N+k*i)*100./(3*N*N) << "%" << "\n";
       h1->Fill(par[2], par[0], chi2);
+      h1d->Fill(par[2], par[0], diff);
     }
   }
 
@@ -256,8 +291,10 @@ void TemplateFitter::Draw()
     for(int j=1; j<=N; j++) {
       par[1] = h0->GetXaxis()->GetBinCenter(j);
       chi2 = getChi2(par);
-      std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\n";
+      diff = sqrt(abs(chi2 - chi2t));
+      if( j==N ) std::cout << par[0] << "\t" << par[1] << "\t" << par[2] << "\t" << chi2 << "\t" << diff << "\t" << (2*N*N+i*j)*100./(3*N*N) << "%" << "\n";
       h2->Fill(par[0], par[1], chi2);
+      h2d->Fill(par[0], par[1], diff);
     }
   }
 
@@ -273,43 +310,139 @@ void TemplateFitter::Draw()
   g2->SetMarkerColor(kRed);
   g2->SetMarkerSize(5);
 
-  h0->SetTitle("Chi2 Surface");
+  h0->SetTitle(Form("%s Chi2 Surface (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
   h0->GetXaxis()->SetTitle("Umm2");
   h0->GetYaxis()->SetTitle("dm2");
   h0->SetStats(0);
-  h1->SetTitle("Chi2 Surface");
+  h1->SetTitle(Form("%s Chi2 Surface (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
   h1->GetXaxis()->SetTitle("dm2");
   h1->GetYaxis()->SetTitle("Uee2");
   h1->SetStats(0);
-  h2->SetTitle("Chi2 Surface");
+  h2->SetTitle(Form("%s Chi2 Surface (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
   h2->GetXaxis()->SetTitle("Uee2");
   h2->GetYaxis()->SetTitle("Umm2");
   h2->SetStats(0);
+
+  TH2D *h0L = (TH2D*) h0->Clone();
+  TH2D *h1L = (TH2D*) h1->Clone();
+  TH2D *h2L = (TH2D*) h2->Clone();
+
+  h0d->SetTitle(Form("%s sqrt(Chi2-Chi2_true) (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
+  h0d->GetXaxis()->SetTitle("Umm2");
+  h0d->GetYaxis()->SetTitle("dm2");
+  h0d->SetStats(0);
+  h1d->SetTitle(Form("%s sqrt(Chi2-Chi2_true) (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
+  h1d->GetXaxis()->SetTitle("dm2");
+  h1d->GetYaxis()->SetTitle("Uee2");
+  h1d->SetStats(0);
+  h2d->SetTitle(Form("%s sqrt(Chi2-Chi2_true) (nu<%.1fGeV & Etheta2<%.1fMeV)",name,nu,Ev));
+  h2d->GetXaxis()->SetTitle("Uee2");
+  h2d->GetYaxis()->SetTitle("Umm2");
+  h2d->SetStats(0);
+
+  TH2D *h0dL = (TH2D*) h0d->Clone();
+  TH2D *h1dL = (TH2D*) h1d->Clone();
+  TH2D *h2dL = (TH2D*) h2d->Clone();
+
+  double chi2L_max = 5E4;
+  double chi2_max = 3E3;
+  double diffL_max = 300;
+  double diff_max = 200;
   
   gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
  
-  TCanvas *c0 = new TCanvas("c0","",800,600);
-  c0->SetLogz();
-  h0->SetMaximum(1E6);
+  TCanvas *cchi2_0L = new TCanvas("cchi2_0L","",800,600);
+  cchi2_0L->SetLogz(1);
+  h0L->SetMaximum(chi2L_max);
+  h0L->Draw("colz");
+  g0->Draw("same C*");
+  cchi2_0L->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_0_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cchi2_0 = new TCanvas("cchi2_0","",800,600);
+  cchi2_0->SetLogz(0);
+  h0->SetMaximum(chi2_max);
   h0->Draw("colz");
   g0->Draw("same C*");
-  c0->SaveAs(Form("chi2Surface_1%d0_%d_wCov.png",cutNo,cutEv));
-  TCanvas *c1 = new TCanvas("c1","",800,600);
-  c1->SetLogz();
-  h1->SetMaximum(1E6);
+  cchi2_0->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_0.png",name,para,cutNu,cutEv));
+
+  TCanvas *cchi2_1L = new TCanvas("cchi2_1L","",800,600);
+  cchi2_1L->SetLogz(1);
+  h1L->SetMaximum(chi2L_max);
+  h1L->Draw("colz");
+  g1->Draw("same C*");
+  cchi2_1L->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_1_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cchi2_1 = new TCanvas("cchi2_1","",800,600);
+  cchi2_1->SetLogz(0);
+  h1->SetMaximum(chi2_max);
   h1->Draw("colz");
   g1->Draw("same C*");
-  c1->SaveAs(Form("chi2Surface_1%d1_%d_wCov.png",cutNo,cutEv));
-  TCanvas *c2 = new TCanvas("c2","",800,600);
-  c2->SetLogz();
-  h2->SetMaximum(1E6);
+  cchi2_1->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_1.png",name,para,cutNu,cutEv));
+
+  TCanvas *cchi2_2L = new TCanvas("cchi2_2L","",800,600);
+  cchi2_2L->SetLogz(1);
+  h2L->SetMaximum(chi2L_max);
   h2->Draw("colz");
   g2->Draw("same C*");
-  c2->SaveAs(Form("chi2Surface_1%d2_%d_wCov.png",cutNo,cutEv));
+  cchi2_2L->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_2_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cchi2_2 = new TCanvas("cchi2_2","",800,600);
+  cchi2_2->SetLogz(0);
+  h2->SetMaximum(chi2_max);
+  h2->Draw("colz");
+  g2->Draw("same C*");
+  cchi2_2->SaveAs(Form("%s_chi2Surface_wCov_%d%d%d_2.png",name,para,cutNu,cutEv));
 
-  TFile *out = new TFile(Form("chi2_1%d_%d_wCov.root",cutNo,cutEv),"RECREATE");
+  TCanvas *cdiff_0L = new TCanvas("cdiff_0L","",800,600);
+  cdiff_0L->SetLogz(1);
+  h0dL->SetMaximum(diffL_max);
+  h0dL->Draw("colz");
+  g0->Draw("same C*");
+  cdiff_0L->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_0_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cdiff_0 = new TCanvas("cdiff_0","",800,600);
+  cdiff_0->SetLogz(0);
+  h0d->SetMaximum(diff_max);
+  h0d->Draw("colz");
+  g0->Draw("same C*");
+  cdiff_0->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_0.png",name,para,cutNu,cutEv));
+
+  TCanvas *cdiff_1L = new TCanvas("cdiff_1L","",800,600);
+  cdiff_1L->SetLogz(1);
+  h1dL->SetMaximum(diffL_max);
+  h1dL->Draw("colz");
+  g1->Draw("same C*");
+  cdiff_1L->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_1_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cdiff_1 = new TCanvas("cdiff_1","",800,600);
+  cdiff_1->SetLogz(0);
+  h1d->SetMaximum(diff_max);
+  h1d->Draw("colz");
+  g1->Draw("same C*");
+  cdiff_1->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_1.png",name,para,cutNu,cutEv));
+
+  TCanvas *cdiff_2L = new TCanvas("cdiff_2L","",800,600);
+  cdiff_2L->SetLogz(1);
+  h2dL->SetMaximum(diffL_max);
+  h2dL->Draw("colz");
+  g2->Draw("same C*");
+  cdiff_2L->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_2_Log.png",name,para,cutNu,cutEv));
+  TCanvas *cdiff_2 = new TCanvas("cdiff_2","",800,600);
+  cdiff_2->SetLogz(0);
+  h2d->SetMaximum(diff_max);
+  h2d->Draw("colz");
+  g2->Draw("same C*");
+  cdiff_2->SaveAs(Form("%s_chi2Diff_wCov_%d%d%d_2.png",name,para,cutNu,cutEv));
+
+  TFile *out = new TFile(Form("%s_chi2_wCov_%d%d%d.root",name,para,cutNu,cutEv),"RECREATE");
   h0->Write();
   h1->Write();
   h2->Write();
+  h0L->Write();
+  h1L->Write();
+  h2L->Write();
+  h0d->Write();
+  h1d->Write();
+  h2d->Write();
+  h0dL->Write();
+  h1dL->Write();
+  h2dL->Write();
   out->Close();
+
+  gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
 }

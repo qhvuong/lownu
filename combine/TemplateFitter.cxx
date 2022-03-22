@@ -70,7 +70,7 @@ void TemplateFitter::setCovmtr( double bincontent[301][301] )
     }
   }
 }
-
+/*
 // function whose return Minuit mimizes, must take const double* and return double
 double TemplateFitter::getChi2( const double * par )
 { 
@@ -94,8 +94,6 @@ double TemplateFitter::getChi2( const double * par )
   TH1D * nue_tp_os = (TH1D*) nue_tp->Clone();
   TH1D * nue_tp_unos = (TH1D*) nue_tp->Clone();
   
-
-  // Add in oscillated neutrinos by taking the nu_mu CC templates and weighting by the oscillation probability
   for( int i = 10; i < 480; ++i ) {
     double mue = 0;
     double ee = 0;
@@ -120,7 +118,10 @@ double TemplateFitter::getChi2( const double * par )
     nue_tp_mm->Add(nue_m_templates[i], Pmm);
     nue_tp_em->Add(nue_w_e_templates[i], Pmue);
     nue_tp_ee->Add(nue_e_templates[i], Pee);
-
+    if(i<30){
+    TCanvas *c = new TCanvas(Form("c%d",i),"",900,700);
+    CC_tp_me->Draw();
+    c->SaveAs(Form("CC_tp_me%d.png",i));
   }
   // Now we have nue temp = mu-->e (no reco cut) + e-->e (no reco cut)
   CC_tp_e->Add(CC_tp_me_nc); CC_tp_e->Add(CC_tp_ee);
@@ -182,12 +183,12 @@ bool TemplateFitter::doFit( double &Uee2, double &Umm2, double &dm2 )
   // Go!
   fitter->Minimize();
 
-/*
+
   if( fitter->Status() != 0 ) {
     std::cout << "Something bad happened" << std::endl;
     return false;
   }
-*/
+
 
   const double *bestfit = fitter->X();
   Uee2 = bestfit[0];
@@ -201,13 +202,16 @@ bool TemplateFitter::doFit( double &Uee2, double &Umm2, double &dm2 )
   return true;
 
 }
-
+*/
 void TemplateFitter::TrueDraw()
 {
   double par[3];
-  par[0]=bf[0];
+/*  par[0]=bf[0];
   par[1]=bf[1];
-  par[2]=bf[2];
+  par[2]=bf[2];*/
+  par[0]=0.04;
+  par[1]=0.01;
+  par[2]=6.0;
 
   TH1D * CC_tp_e = (TH1D*) CC_m_templates[0]->Clone();
   CC_tp_e->Reset();
@@ -254,7 +258,10 @@ void TemplateFitter::TrueDraw()
     nue_tp_mm->Add(nue_m_templates[i], Pmm);
     nue_tp_em->Add(nue_w_e_templates[i], Pmue);
     nue_tp_ee->Add(nue_e_templates[i], Pee);
-
+    if(i<30){
+    TCanvas *c = new TCanvas(Form("c%d",i),"",900,700);
+    CC_tp_me_nc->Draw();
+    c->SaveAs(Form("CC_tp_me%d.png",i));}
   }
   // Now we have nue temp = mu-->e (no reco cut) + e-->e (no reco cut)
   CC_tp_e->Add(CC_tp_me_nc); CC_tp_e->Add(CC_tp_ee);

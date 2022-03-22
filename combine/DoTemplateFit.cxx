@@ -50,10 +50,10 @@ int main()
 
   tf.setEnergyBins( energy_bins );
 
-  double bf_dm2, bf_Uee2, bf_Umm2;
-  bool isOK = tf.doFit( bf_Uee2, bf_Umm2 , bf_dm2);
-  printf( "nue Best-fit Uee2 = %f, Umm2 = %f, dm2 = %f\n", bf_Uee2, bf_Umm2, bf_dm2 );
-  //tf.TrueDraw();
+  //double bf_dm2, bf_Uee2, bf_Umm2;
+  //bool isOK = tf.doFit( bf_Uee2, bf_Umm2 , bf_dm2);
+  //printf( "nue Best-fit Uee2 = %f, Umm2 = %f, dm2 = %f\n", bf_Uee2, bf_Umm2, bf_dm2 );
+  tf.TrueDraw();
 
 }
 

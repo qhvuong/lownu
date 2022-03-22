@@ -13,6 +13,7 @@ class TemplateFitter {
     ~TemplateFitter(){};
     void setEnergyBins(double bins[481]);
     void setCovmtr(double bincontent[301][301]);
+    void setPara(int para, int cutNu, int cutEv, int s);
     bool doFit(double &Uee2, double &Umm2, double &dm2);
     void Draw(double Uee2, double Umm2, double dm2);
     void TrueDraw();
