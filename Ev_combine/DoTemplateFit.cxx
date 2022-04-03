@@ -5,19 +5,23 @@
 
 int main()
 {
-  int para = 2;
-  Int_t cutNo = 0;
-  Int_t cutEv = 0;
+  char var[20] = "EvReco";
+  int oscpar, nuCut, EvCut, seed;
+  oscpar = 1;
+  TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",oscpar),"READ");
+  TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",oscpar),"READ");
+  nuCut = 0;
+  for(EvCut=0; EvCut<3; EvCut++) {
+  //EvCut = 1;
+  for(seed=0; seed<3; seed++) {
 
-  TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu_analysis/gen_data/CC/output_%d.root",para),"READ");
-  TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu_analysis/gen_data/nuescattering/nue_output_%d.root",para),"READ");
-  TH2D* CC_hm = (TH2D*)CC_f->Get(Form("m_hEvRecoVsEv%d",cutNo));
-  TH2D* CC_hm_nc = (TH2D*)CC_f->Get(Form("nc_m_hEvRecoVsEv%d",cutNo));
-  TH2D* CC_he = (TH2D*)CC_f->Get(Form("e_hEvRecoVsEv%d",cutNo));
-  TH2D* nue_hm = (TH2D*)nue_f->Get(Form("m_hEvRecoVsEv%d",cutEv));
-  TH2D* nue_hm_w = (TH2D*)nue_f->Get(Form("m_hEvRecoVsEv%d_w",cutEv));
-  TH2D* nue_he = (TH2D*)nue_f->Get(Form("e_hEvRecoVsEv%d",cutEv));
-  TH2D* nue_he_w = (TH2D*)nue_f->Get(Form("e_hEvRecoVsEv%d_w",cutEv));
+  TH2D* CC_hm = (TH2D*)CC_f->Get(Form("m_h%sVsEv%d",var,nuCut));
+  TH2D* CC_hm_nc = (TH2D*)CC_f->Get(Form("nc_m_h%sVsEv%d",var,nuCut));
+  TH2D* CC_he = (TH2D*)CC_f->Get(Form("e_h%sVsEv%d",var,nuCut));
+  TH2D* nue_hm = (TH2D*)nue_f->Get(Form("m_h%sVsEv%d",var,EvCut));
+  TH2D* nue_hm_w = (TH2D*)nue_f->Get(Form("m_h%sVsEv%d_w",var,EvCut));
+  TH2D* nue_he = (TH2D*)nue_f->Get(Form("e_h%sVsEv%d",var,EvCut));
+  TH2D* nue_he_w = (TH2D*)nue_f->Get(Form("e_h%sVsEv%d_w",var,EvCut));
 
   TH1D * CC_templates_m[480];
   TH1D * CC_templates_m_nc[480];
@@ -37,35 +41,30 @@ int main()
     nue_templates_e_w[i]  = (TH1D*)nue_he_w->ProjectionY(Form("nue_w_e_bin%d",i+1),i+1,i+1);
   }
 
-  TH1D * CC_target_e_ft = (TH1D*)CC_f->Get(Form("e_hEvReco_w%d_ft",cutNo));
-  TH1D * CC_target_m_ft = (TH1D*)CC_f->Get(Form("m_hEvReco_w%d_ft",cutNo));
-  TH1D * nue_target_ft  = (TH1D*)nue_f->Get(Form("hEvReco%d_ft",cutEv));
+  TH1D * CC_target_e_ft = (TH1D*)CC_f->Get(Form("e_h%s_w%d_ft",var,nuCut));
+  TH1D * CC_target_m_ft = (TH1D*)CC_f->Get(Form("m_h%s_w%d_ft",var,nuCut));
+  TH1D * nue_target_ft  = (TH1D*)nue_f->Get(Form("h%s%d_ft",var,EvCut));
 
-  TFile *cov_f = new TFile(Form("/dune/app/users/qvuong/lownu_analysis/cov_matrix/Ev_cov%d_10000.root",cutEv),"READ");
-  TH2D *cov = (TH2D*)cov_f->Get(Form("h%d",cutNo));
-  std::cout << cov->GetNbinsX() << "\t" << cov->GetNbinsY() << "\n";
+  TemplateFitter tf( CC_templates_m, CC_templates_m_nc, CC_templates_e, nue_templates_m, nue_templates_m_w, nue_templates_e, nue_templates_e_w, CC_target_m_ft, CC_target_e_ft, nue_target_ft );
 
-  double cov_bins[301][301];
-  for(int i=0; i<300; i++) {
-    for(int j=0; j<300; j++) {
-      cov_bins[i][j] = cov->GetBinContent(i+1, j+1);
-    }
-  }    
-
-  TemplateFitter tf( CC_templates_m, CC_templates_m_nc, CC_templates_e, nue_templates_m, nue_templates_m_w, nue_templates_e, nue_templates_e_w, CC_target_e_ft, CC_target_m_ft, nue_target_ft );
   double energy_bins[481];
   for( int b = 0; b <= 480; ++b ) {
     energy_bins[b] = CC_he->GetXaxis()->GetBinLowEdge(b+1);
   }
 
   tf.setEnergyBins( energy_bins );
-  tf.setCovmtr( cov_bins );
+  tf.setPara( var, oscpar, nuCut, EvCut, seed );
 
   double bf_dm2, bf_Uee2, bf_Umm2;
   bool isOK = tf.doFit( bf_Uee2, bf_Umm2 , bf_dm2);
   printf( "nue Best-fit Uee2 = %f, Umm2 = %f, dm2 = %f\n", bf_Uee2, bf_Umm2, bf_dm2 );
   tf.Draw();
   tf.TrueDraw();
+
+  }
+  }
+  //}
+
 }
 
 

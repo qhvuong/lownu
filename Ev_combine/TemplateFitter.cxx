@@ -13,7 +13,7 @@
 #include "TGraph.h"
 #include "TLegend.h"
 
-TemplateFitter::TemplateFitter(TH1D * CC_templates_m[480], TH1D * CC_templates_m_nc[480], TH1D * CC_templates_e[480], TH1D * nue_templates_m[480], TH1D * nue_templates_m_w[480], TH1D * nue_templates_e[480], TH1D * nue_templates_e_w[480], TH1D * CC_target_e, TH1D * CC_target_m, TH1D * nue_target)
+TemplateFitter::TemplateFitter(TH1D * CC_templates_m[480], TH1D * CC_templates_m_nc[480], TH1D * CC_templates_e[480], TH1D * nue_templates_m[480], TH1D * nue_templates_m_w[480], TH1D * nue_templates_e[480], TH1D * nue_templates_e_w[480], TH1D * CC_target_m, TH1D * CC_target_e, TH1D * nue_target)
 {
   for( int i = 0; i < 480; ++i ) {
   CC_m_templates[i] = CC_templates_m[i];
@@ -32,9 +32,9 @@ TemplateFitter::TemplateFitter(TH1D * CC_templates_m[480], TH1D * CC_templates_m
 
 void TemplateFitter::setEnergyBins( double bins[481] )
 {
-  for( int i = 0; i < 481; ++ i ) {m_energy_bins[i] = bins[i];
-  }
+  for( int i = 0; i < 481; ++ i ) {m_energy_bins[i] = bins[i];}
 }
+
 
 double TemplateFitter::getPmue( double energy, double Uee2, double Umm2, double dm2 )
 {
@@ -61,32 +61,26 @@ double TemplateFitter::getPmm( double energy, double Uee2, double Umm2, double d
   return prob;
 }
 
-TMatrixD covmtr(300,300);
-
-void TemplateFitter::setCovmtr( double bincontent[301][301] )
-{
-  for(int i=0; i<300; i++) {
-    for(int j=0; j<300; j++) {
-      covmtr[i][j] = bincontent[i][j];
-    }
-  }
-}
-
 const int N = 40;
 TH2D *h0 = new TH2D("h0","",N,0,0.1, N,0,12.0);
 TH2D *h1 = new TH2D("h1","",N,0,12.0,N,0,0.1);
 TH2D *h2 = new TH2D("h2","",N,0,0.1, N,0,0.1);
 
-int para = 2;
-int cutNo = 0;
-int cutEv = 0;
-int s = 0;
+void TemplateFitter::setPara( char var[20], int oscpar, int nuCut, int EvCut, int seed )
+{
+  name  = var;
+  para  = oscpar;
+  cutNu = nuCut;
+  cutEv = EvCut;
+  s     = seed;
+}
+
 // function whose return Minuit mimizes, must take const double* and return double
 double TemplateFitter::getChi2( const double * par )
 { 
   // Create a histogram "temp" from the templates
   // Start with the intrinsic nu_e CC template, which doesn't change with oscillations
-   TH1D * CC_tp_e = (TH1D*) CC_m_templates[0]->Clone();
+  TH1D * CC_tp_e = (TH1D*) CC_m_templates[0]->Clone();
   CC_tp_e->Reset();
   TH1D * CC_tp_me = (TH1D*) CC_tp_e->Clone();
   TH1D * CC_tp_ee = (TH1D*) CC_tp_e->Clone();
@@ -139,65 +133,52 @@ double TemplateFitter::getChi2( const double * par )
   nue_tp->Add(nue_tp_os);       nue_tp->Add(nue_tp_unos);
 
   // calculate the chi2 with the "data" target
-  const int nbins_Elep = 100;
+  const int nbins_E = 100;
   double chi2 = 0.0;
 
-  TMatrixD target(3*nbins_Elep, 1);
-  TMatrixD temp(3*nbins_Elep, 1);
-  TMatrixD diff(3*nbins_Elep, 1);
-  TMatrixD diff_T(1, 3*nbins_Elep);
-  TMatrixD unc(3*nbins_Elep, 3*nbins_Elep);
-  TMatrixD cov(3*nbins_Elep, 3*nbins_Elep);
-  TMatrixD covmtr_tot(3*nbins_Elep, 3*nbins_Elep);
+  TMatrixD target(3*nbins_E, 1);
+  TMatrixD temp(3*nbins_E, 1);
+  TMatrixD diff(3*nbins_E, 1);
+  TMatrixD diff_T(1, 3*nbins_E);
+  TMatrixD unc(3*nbins_E, 3*nbins_E);
+  TMatrixD cov(3*nbins_E, 3*nbins_E);
+  TMatrixD covmtr_tot(3*nbins_E, 3*nbins_E);
 
-  for( int bx = 0; bx < nbins_Elep; bx++ ) {
+  for( int bx = 0; bx < nbins_E; bx++ ) {
     temp[bx][0] = CC_tp_m->GetBinContent(bx+1); 
-    temp[bx+nbins_Elep][0] = CC_tp_e->GetBinContent(bx+1); 
-    temp[bx+2*nbins_Elep][0] = nue_tp->GetBinContent(bx+1); 
+    temp[bx+nbins_E][0] = CC_tp_e->GetBinContent(bx+1);
+    temp[bx+2*nbins_E][0] = nue_tp->GetBinContent(bx+1);
 
     target[bx][0] = CC_m_target->GetBinContent(bx+1); 
-    target[bx+nbins_Elep][0] = CC_e_target->GetBinContent(bx+1); 
-    target[bx+2*nbins_Elep][0] = target_nue->GetBinContent(bx+1); 
+    target[bx+nbins_E][0] = CC_e_target->GetBinContent(bx+1);
+    target[bx+2*nbins_E][0] = target_nue->GetBinContent(bx+1);
 
     diff[bx][0] = temp[bx][0] - target[bx][0];
-    diff[bx+nbins_Elep][0] = temp[bx+nbins_Elep][0] - target[bx+nbins_Elep][0];
-    diff[bx+2*nbins_Elep][0] = temp[bx+2*nbins_Elep][0] - target[bx+2*nbins_Elep][0];
+    diff[bx+nbins_E][0] = temp[bx+nbins_E][0] - target[bx+nbins_E][0];
+    diff[bx+2*nbins_E][0] = temp[bx+2*nbins_E][0] - target[bx+2*nbins_E][0];
  
     diff_T[0][bx] = diff[bx][0]; 
-    diff_T[0][bx+nbins_Elep] = diff[bx+nbins_Elep][0]; 
-    diff_T[0][bx+2*nbins_Elep] = diff[bx+2*nbins_Elep][0]; 
+    diff_T[0][bx+nbins_E] = diff[bx+nbins_E][0];
+    diff_T[0][bx+2*nbins_E] = diff[bx+2*nbins_E][0];
 
-    for( int by = 0; by < nbins_Elep; by++ ) {
+    for( int by = 0; by < nbins_E; by++ ) {
       unc[bx][by] 	       = 0;
-      unc[bx][by+nbins_Elep]   = 0;
-      unc[bx][by+2*nbins_Elep] = 0;
+      unc[bx][by+nbins_E]   = 0;
+      unc[bx][by+2*nbins_E] = 0;
 
-      unc[bx+nbins_Elep][by]              = 0;
-      unc[bx+nbins_Elep][by+nbins_Elep]   = 0;
-      unc[bx+nbins_Elep][by+2*nbins_Elep] = 0;
+      unc[bx+nbins_E][by]              = 0;
+      unc[bx+nbins_E][by+nbins_E]   = 0;
+      unc[bx+nbins_E][by+2*nbins_E] = 0;
 
-      unc[bx+2*nbins_Elep][by]              = 0;
-      unc[bx+2*nbins_Elep][by+nbins_Elep]   = 0;
-      unc[bx+2*nbins_Elep][by+2*nbins_Elep] = 0;
+      unc[bx+2*nbins_E][by]              = 0;
+      unc[bx+2*nbins_E][by+nbins_E]   = 0;
+      unc[bx+2*nbins_E][by+2*nbins_E] = 0;
 
       if(bx == by) {
         unc[bx][by] 			      = CC_m_target->GetBinContent(bx+1);
-        unc[bx+nbins_Elep][by+nbins_Elep]     = CC_e_target->GetBinContent(bx+1);
-        unc[bx+2*nbins_Elep][by+2*nbins_Elep] = target_nue->GetBinContent(bx+1);
+        unc[bx+nbins_E][by+nbins_E]     = CC_e_target->GetBinContent(bx+1);
+        unc[bx+2*nbins_E][by+2*nbins_E] = target_nue->GetBinContent(bx+1);
       }
-/*
-      cov[bx][by]              = covmtr[bx][by]              * CC_m_target->GetBinContent(bx+1) * CC_m_target->GetBinContent(by+1);
-      cov[bx][by+nbins_Elep]   = covmtr[bx][by+nbins_Elep]   * CC_m_target->GetBinContent(bx+1) * CC_e_target->GetBinContent(by+1);
-      cov[bx][by+2*nbins_Elep] = covmtr[bx][by+2*nbins_Elep] * CC_m_target->GetBinContent(bx+1) * target_nue->GetBinContent(by+1);
-
-      cov[bx+nbins_Elep][by]              = covmtr[bx+nbins_Elep][by]              * CC_e_target->GetBinContent(bx+1) * CC_m_target->GetBinContent(by+1);
-      cov[bx+nbins_Elep][by+nbins_Elep]   = covmtr[bx+nbins_Elep][by+nbins_Elep]   * CC_e_target->GetBinContent(bx+1) * CC_e_target->GetBinContent(by+1);
-      cov[bx+nbins_Elep][by+2*nbins_Elep] = covmtr[bx+nbins_Elep][by+2*nbins_Elep] * CC_e_target->GetBinContent(bx+1) * target_nue->GetBinContent(by+1);
-
-      cov[bx+2*nbins_Elep][by]              = covmtr[bx+2*nbins_Elep][by]              * target_nue->GetBinContent(bx+1) * CC_m_target->GetBinContent(by+1);
-      cov[bx+2*nbins_Elep][by+nbins_Elep]   = covmtr[bx+2*nbins_Elep][by+nbins_Elep]   * target_nue->GetBinContent(bx+1) * CC_e_target->GetBinContent(by+1);
-      cov[bx+2*nbins_Elep][by+2*nbins_Elep] = covmtr[bx+2*nbins_Elep][by+2*nbins_Elep] * target_nue->GetBinContent(bx+1) * target_nue->GetBinContent(by+1);
-*/
     }
   }
 
@@ -205,9 +186,9 @@ double TemplateFitter::getChi2( const double * par )
   TDecompSVD svd(covmtr_tot);
   TMatrixD inv = svd.Invert();
 
-  TMatrixD diff_cov(1, 3*nbins_Elep);
-  for( int bx = 0; bx < 3*nbins_Elep; bx++ ) {
-    for( int by = 0; by < 3*nbins_Elep; by++ ) {
+  TMatrixD diff_cov(1, 3*nbins_E);
+  for( int bx = 0; bx < 3*nbins_E; bx++ ) {
+    for( int by = 0; by < 3*nbins_E; by++ ) {
       diff_cov[0][bx] += diff_T[0][by] * inv[by][bx];
     }
     chi2 += diff_cov[0][bx] * diff[bx][0];
@@ -258,6 +239,8 @@ bool TemplateFitter::doFit( double &Uee2, double &Umm2, double &dm2 )
     p1 = seed2[s][1];
     p2 = seed2[s][2];
   }
+  std::cout << "seed = " << s << "\t" << p0 << "\t" << p1 << "\t" << p2 << "\n";
+
   // Make a Minuit fitter object
   ROOT::Math::Minimizer* fitter = ROOT::Math::Factory::CreateMinimizer("Minuit2"); 
   fitter->SetMaxFunctionCalls(1000000); // maximum number of times to try to find the minimum before failing
@@ -304,10 +287,13 @@ bool TemplateFitter::doFit( double &Uee2, double &Umm2, double &dm2 )
 
 void TemplateFitter::Draw()
 {
+
   double par[3];
   par[0] = bf0[0];
   par[1] = bf1[0];
   par[2] = bf2[0];
+
+  std::cout << "best_fit: " << par[0] << "\t" << par[1] << "\t" << par[2] << "\n";
 
   TH1D * CC_tp_e = (TH1D*) CC_m_templates[0]->Clone();
   CC_tp_e->Reset();
@@ -374,12 +360,8 @@ void TemplateFitter::Draw()
   CC_tp_e->SetMarkerSize(0.5);
   CC_tp_me->SetName("tp_me");
   CC_tp_me->SetMarkerStyle(21);
-  CC_tp_me->SetMarkerColor(kGreen);
+  CC_tp_me->SetMarkerColor(kBlue);
   CC_tp_me->SetMarkerSize(0.5);
-  CC_tp_ee->SetName("tp_ee");
-  CC_tp_ee->SetMarkerStyle(21);
-  CC_tp_ee->SetMarkerColor(kBlue);
-  CC_tp_ee->SetMarkerSize(0.5);
 
   CC_tp_m->SetName("tp_m");
   CC_tp_m->SetMarkerStyle(21);
@@ -387,12 +369,8 @@ void TemplateFitter::Draw()
   CC_tp_m->SetMarkerSize(0.5);
   CC_tp_em->SetName("tp_em");
   CC_tp_em->SetMarkerStyle(21);
-  CC_tp_em->SetMarkerColor(kGreen);
+  CC_tp_em->SetMarkerColor(kBlue);
   CC_tp_em->SetMarkerSize(0.5);
-  CC_tp_mm->SetName("tp_mm");
-  CC_tp_mm->SetMarkerStyle(21);
-  CC_tp_mm->SetMarkerColor(kBlue);
-  CC_tp_mm->SetMarkerSize(0.5);
 
   nue_tp->SetName("tp_nue");
   nue_tp->SetMarkerStyle(21);
@@ -400,62 +378,50 @@ void TemplateFitter::Draw()
   nue_tp->SetMarkerSize(0.5);
   nue_tp_os->SetName("tp_nue_os");
   nue_tp_os->SetMarkerStyle(21);
-  nue_tp_os->SetMarkerColor(kGreen);
+  nue_tp_os->SetMarkerColor(kBlue);
   nue_tp_os->SetMarkerSize(0.5);
-  nue_tp_unos->SetName("tp_nue_unos");
-  nue_tp_unos->SetMarkerStyle(21);
-  nue_tp_unos->SetMarkerColor(kBlue);
-  nue_tp_unos->SetMarkerSize(0.5);
 
   TCanvas *c_e = new TCanvas("c_e","",900,700);
-  gPad->SetLogy();
-  CC_e_target->GetXaxis()->SetRangeUser(0,60);
   CC_e_target->Draw();
-  CC_tp_e->Draw("same");
   CC_tp_me->Draw("same");
-  CC_tp_ee->Draw("same");
-  TLegend *legend_e = new TLegend(0.75,0.78,0.9,0.9);
-  legend_e->AddEntry("e_target","nueCC target");
-  legend_e->AddEntry("tp_e","universal template fit");
-  legend_e->AddEntry("tp_me","oscillated mu->e");
-  legend_e->AddEntry("tp_ee","unoscillated e->e");
+  CC_tp_e->Draw("same");
+  TLegend *legend_e = new TLegend(0.65,0.70,0.9,0.9);
+  legend_e->AddEntry(CC_e_target,"fluctuated target");
+  legend_e->AddEntry(CC_tp_me,"oscillated mu->e");
+  legend_e->AddEntry(CC_tp_e,"templates at bestfit");
   legend_e->Draw();
-  c_e->SaveAs(Form("Ev_CC_e_fit_%d%d_%d%d_ft.png",para,cutNo,cutEv,s));
+  c_e->SaveAs(Form("%s_fit_CC_e_%d%d%d_%d_ft.png",name,para,cutNu,cutEv,s));
 
   TCanvas *c_m = new TCanvas("c_m","",900,700);
-  gPad->SetLogy();
-  CC_m_target->GetXaxis()->SetRangeUser(0,100);
   CC_m_target->Draw();
-  CC_tp_m->Draw("same");
   CC_tp_em->Draw("same");
-  CC_tp_mm->Draw("same");
-  TLegend *legend_m = new TLegend(0.75,0.78,0.9,0.9);
-  legend_m->AddEntry("m_target","numuCC target");
-  legend_m->AddEntry("tp_m","universal template fit");
-  legend_m->AddEntry("tp_em","oscillated mu->e");
-  legend_m->AddEntry("tp_mm","unoscillated e->e");
+  CC_tp_m->Draw("same");
+  TLegend *legend_m = new TLegend(0.65,0.70,0.9,0.9);
+  legend_m->AddEntry(CC_m_target,"fluctuated target");
+  legend_m->AddEntry(CC_tp_em,"oscillated e->mu");
+  legend_m->AddEntry(CC_tp_m,"templates at bestfit");
   legend_m->Draw();
-  c_m->SaveAs(Form("Ev_CC_m_fit_%d%d_%d%d_ft.png",para,cutNo,cutEv,s));
+  c_m->SaveAs(Form("%s_fit_CC_m_%d%d%d_%d_ft.png",name,para,cutNu,cutEv,s));
 
   TCanvas *c = new TCanvas("c","",900,700);
   gPad->SetLogy();
-  target_nue->GetXaxis()->SetRangeUser(0,80);
   target_nue->Draw();
-  nue_tp->Draw("same");
   nue_tp_os->Draw("same");
-  nue_tp_unos->Draw("same");
-  TLegend *legend_nue = new TLegend(0.75,0.78,0.9,0.9);
-  legend_nue->AddEntry("nue_target","nu+e target");
-  legend_nue->AddEntry("tp_nue","universal template fit");
-  legend_nue->AddEntry("tp_nue_os","oscillated mu->e + e->mu");
-  legend_nue->AddEntry("tp_nue_unos","unoscillated e->e + mu->mu");
+  nue_tp->Draw("same");
+  TLegend *legend_nue = new TLegend(0.65,0.78,0.9,0.9);
+  legend_nue->AddEntry(target_nue,"fluctuated target");
+  legend_nue->AddEntry(nue_tp_os,"oscillated mu->e & e->mu");
+  legend_nue->AddEntry(nue_tp,"templates at bestfit");
   legend_nue->Draw();
-  c->SaveAs(Form("Ev_nue_fit_%d%d_%d%d_ft_Log.png",para,cutNo,cutEv,s));
+  c->SaveAs(Form("%s_fit_nue_%d%d%d_%d_ft_Log.png",name,para,cutNu,cutEv,s));
 
-  TFile *f = new TFile(Form("/dune/app/users/qvuong/lownu_analysis/Ev_combine/chi2/Ev_chi2_%d%d_%d.root",para,cutNo,cutEv));
-  TH2D *hc0 = (TH2D*)f->Get("h0");
-  TH2D *hc1 = (TH2D*)f->Get("h1");
-  TH2D *hc2 = (TH2D*)f->Get("h2");
+  TFile *f = new TFile(Form("/dune/app/users/qvuong/lownu/Ev_combine/chi2/%s_chi2_nCov_%d%d%d.root",name,para,cutNu,cutEv));
+  TH2D *hc0 = (TH2D*)f->Get("h0;1");
+  TH2D *hc1 = (TH2D*)f->Get("h1;1");
+  TH2D *hc2 = (TH2D*)f->Get("h2;1");
+  TH2D *hc0d = (TH2D*)f->Get("h0d;1");
+  TH2D *hc1d = (TH2D*)f->Get("h1d;1");
+  TH2D *hc2d = (TH2D*)f->Get("h2d;1");
 
   double seed1[3][3], seed2[3][3];
   seed1[0][0] = 0.01;
@@ -562,47 +528,101 @@ void TemplateFitter::Draw()
   gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
 
   TCanvas *c0 = new TCanvas("c0","",800,600);
-  c0->SetLogz();
-  hc0->SetMaximum(1E6);
+  c0->SetLogz(0);
+  hc0->SetMaximum(5E4);
   hc0->Draw("colz");
   h0->Draw("same");
   g0->Draw("same P");
   g0s->Draw("same P");
   g0BF->Draw("same P");
-  TLegend *legend0 = new TLegend(0.75,0.78,0.9,0.9);
+  TLegend *legend0 = new TLegend(0.65,0.70,0.9,0.9);
   legend0->AddEntry("g0","  True values");
   legend0->AddEntry("g0s","  Initial Seeds");
   legend0->AddEntry("g0BF","  Bestfit values");
   legend0->Draw();
-  c0->SaveAs(Form("Ev_parDraw_%d%d0_%d%d.png",para,cutNo,cutEv,s));
+  c0->SaveAs(Form("%s_fit_parDraw_%d%d%d_%d0.png",name,para,cutNu,cutEv,s));
   TCanvas *c1 = new TCanvas("c1","",800,600);
-  c1->SetLogz();
-  hc1->SetMaximum(1E6);
+  c1->SetLogz(0);
+  hc1->SetMaximum(5E4);
   hc1->Draw("colz");
   h1->Draw("same");
   g1->Draw("same P");
   g1s->Draw("same P");
   g1BF->Draw("same P");
-  TLegend *legend1 = new TLegend(0.75,0.78,0.9,0.9);
+  TLegend *legend1 = new TLegend(0.65,0.70,0.9,0.9);
   legend1->AddEntry("g1","  True values");
   legend1->AddEntry("g1s","  Initial Seeds");
   legend1->AddEntry("g1BF","  Bestfit values");
   legend1->Draw();
-  c1->SaveAs(Form("Ev_parDraw_%d%d1_%d%d.png",para,cutNo,cutEv,s));
+  c1->SaveAs(Form("%s_fit_parDraw_%d%d%d_%d1.png",name,para,cutNu,cutEv,s));
   TCanvas *c2 = new TCanvas("c2","",800,600);
-  c2->SetLogz();
-  hc2->SetMaximum(1E6);
+  c2->SetLogz(0);
+  hc2->SetMaximum(5E4);
   hc2->Draw("colz");
   h2->Draw("same");
   g2->Draw("same P");
   g2s->Draw("same P");
   g2BF->Draw("same P");
-  TLegend *legend2 = new TLegend(0.75,0.78,0.9,0.9);
+  TLegend *legend2 = new TLegend(0.65,0.70,0.9,0.9);
   legend2->AddEntry("g2","  True values");
   legend2->AddEntry("g2s","  Initial Seeds");
   legend2->AddEntry("g2BF","  Bestfit values");
   legend2->Draw();
-  c2->SaveAs(Form("Ev_parDraw_%d%d2_%d%d.png",para,cutNo,cutEv,s));
+  c2->SaveAs(Form("%s_fit_parDraw_%d%d%d_%d2.png",name,para,cutNu,cutEv,s));
+
+  TCanvas *c0L = new TCanvas("c0L","",800,600);
+  c0L->SetLogz(0);
+  hc0d->SetMaximum(700);
+  hc0d->Draw("colz");
+  h0->Draw("same");
+  g0->Draw("same P");
+  g0s->Draw("same P");
+  g0BF->Draw("same P");
+  TLegend *legend0L = new TLegend(0.65,0.70,0.9,0.9);
+  legend0L->AddEntry("g0","  True values");
+  legend0L->AddEntry("g0s","  Initial Seeds");
+  legend0L->AddEntry("g0BF","  Bestfit values");
+  legend0L->Draw();
+  c0L->SaveAs(Form("%s_fit_parDraw_diff_%d%d%d_%d0_Log.png",name,para,cutNu,cutEv,s));
+  TCanvas *c1L = new TCanvas("c1L","",800,600);
+  c1L->SetLogz(0);
+  hc1d->SetMaximum(700);
+  hc1d->Draw("colz");
+  h1->Draw("same");
+  g1->Draw("same P");
+  g1s->Draw("same P");
+  g1BF->Draw("same P");
+  TLegend *legend1L = new TLegend(0.65,0.70,0.9,0.9);
+  legend1L->AddEntry("g1","  True values");
+  legend1L->AddEntry("g1s","  Initial Seeds");
+  legend1L->AddEntry("g1BF","  Bestfit values");
+  legend1L->Draw();
+  c1L->SaveAs(Form("%s_fit_parDraw_diff_%d%d%d_%d1_Log.png",name,para,cutNu,cutEv,s));
+  TCanvas *c2L = new TCanvas("c2L","",800,600);
+  c2L->SetLogz(0);
+  hc2d->SetMaximum(700);
+  hc2d->Draw("colz");
+  h2->Draw("same");
+  g2->Draw("same P");
+  g2s->Draw("same P");
+  g2BF->Draw("same P");
+  TLegend *legend2L = new TLegend(0.65,0.70,0.9,0.9);
+  legend2L->AddEntry("g2","  True values");
+  legend2L->AddEntry("g2s","  Initial Seeds");
+  legend2L->AddEntry("g2BF","  Bestfit values");
+  legend2L->Draw();
+  c2L->SaveAs(Form("%s_fit_parDraw_diff_%d%d%d_%d2_Log.png",name,para,cutNu,cutEv,s));
+
+  gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
+
+  TFile *out = new TFile(Form("%s_fitResults_%d%d%d_%d.root",name,para,cutNu,cutEv,s),"RECREATE");
+  h0->Write();
+  h1->Write();
+  h2->Write();
+  g0BF->Write();
+  g1BF->Write();
+  g2BF->Write();
+  out->Close();
 }
 
 void TemplateFitter::TrueDraw()
@@ -625,6 +645,8 @@ void TemplateFitter::TrueDraw()
     par[1] = seed2[0][1];
     par[2] = seed2[0][2];
   }
+
+  std::cout << "true values: " << par[0] << "\t" << par[1] << "\t" << par[2] << "\n";
 
   TH1D * CC_tp_e = (TH1D*) CC_m_templates[0]->Clone();
   CC_tp_e->Reset();
@@ -691,12 +713,8 @@ void TemplateFitter::TrueDraw()
   CC_tp_e->SetMarkerSize(0.5);
   CC_tp_me->SetName("tp_me");
   CC_tp_me->SetMarkerStyle(21);
-  CC_tp_me->SetMarkerColor(kGreen);
+  CC_tp_me->SetMarkerColor(kBlue);
   CC_tp_me->SetMarkerSize(0.5);
-  CC_tp_ee->SetName("tp_ee");
-  CC_tp_ee->SetMarkerStyle(21);
-  CC_tp_ee->SetMarkerColor(kBlue);
-  CC_tp_ee->SetMarkerSize(0.5);
 
   CC_tp_m->SetName("tp_m");
   CC_tp_m->SetMarkerStyle(21);
@@ -704,12 +722,8 @@ void TemplateFitter::TrueDraw()
   CC_tp_m->SetMarkerSize(0.5);
   CC_tp_em->SetName("tp_em");
   CC_tp_em->SetMarkerStyle(21);
-  CC_tp_em->SetMarkerColor(kGreen);
+  CC_tp_em->SetMarkerColor(kBlue);
   CC_tp_em->SetMarkerSize(0.5);
-  CC_tp_mm->SetName("tp_mm");
-  CC_tp_mm->SetMarkerStyle(21);
-  CC_tp_mm->SetMarkerColor(kBlue);
-  CC_tp_mm->SetMarkerSize(0.5);
 
   nue_tp->SetName("tp_nue");
   nue_tp->SetMarkerStyle(21);
@@ -717,79 +731,40 @@ void TemplateFitter::TrueDraw()
   nue_tp->SetMarkerSize(0.5);
   nue_tp_os->SetName("tp_nue_os");
   nue_tp_os->SetMarkerStyle(21);
-  nue_tp_os->SetMarkerColor(kGreen);
+  nue_tp_os->SetMarkerColor(kBlue);
   nue_tp_os->SetMarkerSize(0.5);
-  nue_tp_unos->SetName("tp_nue_unos");
-  nue_tp_unos->SetMarkerStyle(21);
-  nue_tp_unos->SetMarkerColor(kBlue);
-  nue_tp_unos->SetMarkerSize(0.5);
 
   TCanvas *c_e = new TCanvas("c_e","",900,700);
-  gPad->SetLogy();
-  CC_e_target->GetXaxis()->SetRangeUser(0,60);
   CC_e_target->Draw();
-  CC_tp_e->Draw("same");
   CC_tp_me->Draw("same");
-  CC_tp_ee->Draw("same");
-  TLegend *legend_e = new TLegend(0.75,0.78,0.9,0.9);
-  legend_e->AddEntry("e_target","nueCC target");
-  legend_e->AddEntry("tp_e","universal template fit");
-  legend_e->AddEntry("tp_me","oscillated mu->e");
-  legend_e->AddEntry("tp_ee","unoscillated e->e");
+  CC_tp_e->Draw("same");
+  TLegend *legend_e = new TLegend(0.65,0.70,0.9,0.9);
+  legend_e->AddEntry(CC_e_target,"fluctuated target");
+  legend_e->AddEntry(CC_tp_me,"true oscillated mu->e");
+  legend_e->AddEntry(CC_tp_e,"templates at true values");
   legend_e->Draw();
-  c_e->SaveAs(Form("Ev_CC_e_TrueDraw_%d%d_%d_ft.png",para,cutNo,cutEv));
+  c_e->SaveAs(Form("%s_TrueDraw_CC_e_%d%d%d_ft.png",name,para,cutNu,cutEv));
 
   TCanvas *c_m = new TCanvas("c_m","",900,700);
-  gPad->SetLogy();
-  CC_m_target->GetXaxis()->SetRangeUser(0,100);
   CC_m_target->Draw();
-  CC_tp_m->Draw("same");
   CC_tp_em->Draw("same");
-  CC_tp_mm->Draw("same");
-  TLegend *legend_m = new TLegend(0.75,0.78,0.9,0.9);
-  legend_m->AddEntry("m_target","numuCC target");
-  legend_m->AddEntry("tp_m","universal template fit");
-  legend_m->AddEntry("tp_em","oscillated mu->e");
-  legend_m->AddEntry("tp_mm","unoscillated e->e");
+  CC_tp_m->Draw("same");
+  TLegend *legend_m = new TLegend(0.65,0.70,0.9,0.9);
+  legend_m->AddEntry(CC_m_target,"fluctuated target");
+  legend_m->AddEntry(CC_tp_em,"true oscillated e->mu");
+  legend_m->AddEntry(CC_tp_m,"templates at true values");
   legend_m->Draw();
-  c_m->SaveAs(Form("Ev_CC_m_TrueDraw_%d%d_%d_ft.png",para,cutNo,cutEv));
+  c_m->SaveAs(Form("%s_TrueDraw_CC_m_%d%d%d_ft.png",name,para,cutNu,cutEv));
 
   TCanvas *c = new TCanvas("c","",900,700);
   gPad->SetLogy();
-  target_nue->GetXaxis()->SetRangeUser(0,80);
   target_nue->Draw();
-  nue_tp->Draw("same");
   nue_tp_os->Draw("same");
-  nue_tp_unos->Draw("same");
-  TLegend *legend_nue = new TLegend(0.75,0.78,0.9,0.9);
-  legend_nue->AddEntry("nue_target","nu+e target");
-  legend_nue->AddEntry("tp_nue","universal template fit");
-  legend_nue->AddEntry("tp_nue_os","oscillated mu->e + e->mu");
-  legend_nue->AddEntry("tp_nue_unos","unoscillated e->e + mu->mu");
+  nue_tp->Draw("same");
+  TLegend *legend_nue = new TLegend(0.65,0.78,0.9,0.9);
+  legend_nue->AddEntry(target_nue,"fluctuated target");
+  legend_nue->AddEntry(nue_tp_os,"oscillated mu->e & e->mu");
+  legend_nue->AddEntry(nue_tp,"templates at true values");
   legend_nue->Draw();
-  c->SaveAs(Form("Ev_nue_TrueDraw_%d%d_%d_ft_Log.png",para,cutNo,cutEv));
+  c->SaveAs(Form("%s_TrueDraw_nue_%d%d%d_ft_Log.png",name,para,cutNu,cutEv));
 }
-/*
-  double CC_chi2_e = 0.0;
-  double CC_chi2_m = 0.0;
-  double nue_chi2 = 0.0;
-
-  for( int bx = 1; bx <= CC_e_target->GetNbinsX(); ++bx ) {
-    double tgt = CC_e_target->GetBinContent(bx);
-    double diff = CC_tp_e->GetBinContent(bx) - tgt;
-    if( tgt > 0. ) CC_chi2_e += (diff*diff) / tgt;
-  }
-  for( int bx = 1; bx <= CC_m_target->GetNbinsX(); ++bx ) {
-    double tgt = CC_m_target->GetBinContent(bx);
-    double diff = CC_tp_m->GetBinContent(bx) - tgt;
-    if( tgt > 0. ) CC_chi2_m += (diff*diff) / tgt;
-  }
-  for( int bx = 1; bx <= nue_em_target->GetNbinsX(); ++bx ) {
-    double tgt = nue_em_target->GetBinContent(bx);
-    double diff = nue_tp->GetBinContent(bx) - tgt;
-    if( tgt > 0. ) nue_chi2 += (diff*diff) / tgt;
-  }
-
-  chi2 = CC_chi2_e + CC_chi2_m + nue_chi2;
-*/
-
