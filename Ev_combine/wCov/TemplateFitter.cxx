@@ -72,11 +72,6 @@ void TemplateFitter::setCovmtr( double bincontent[301][301] )
   }
 }
 
-const int N = 40;
-TH2D *h0 = new TH2D("h0","",N,0,0.1, N,0,12.0);
-TH2D *h1 = new TH2D("h1","",N,0,12.0,N,0,0.1);
-TH2D *h2 = new TH2D("h2","",N,0,0.1, N,0,0.1);
-
 void TemplateFitter::setPara( char var[20], int oscpar, int nuCut, int EvCut, int seed )
 {
   name  = var;
@@ -85,6 +80,18 @@ void TemplateFitter::setPara( char var[20], int oscpar, int nuCut, int EvCut, in
   cutEv = EvCut;
   s     = seed;
 }
+
+double b0 = 0.04;
+double b1 = 0.01;
+double b2 = 6.0;
+
+const int N = 40;
+TH2D *h0  = new TH2D("h0","",N,0,0.1, N,0,12.0);
+TH2D *h1  = new TH2D("h1","",N,0,12.0,N,0,0.1);
+TH2D *h2  = new TH2D("h2","",N,0,0.1, N,0,0.1);
+TH2D *h0z = new TH2D("h0z","",N,0.0   ,2.0*b1,N,0.5*b2,1.5*b2);
+TH2D *h1z = new TH2D("h1z","",N,0.5*b2,1.5*b2,N,0.0   ,2.0*b0);
+TH2D *h2z = new TH2D("h2z","",N,0.0   ,2.0*b0,N,0.0   ,2.0*b1);
 
 // function whose return Minuit mimizes, must take const double* and return double
 double TemplateFitter::getChi2( const double * par )
@@ -221,6 +228,9 @@ double TemplateFitter::getChi2( const double * par )
   h0->Fill(par[1], par[2]);
   h1->Fill(par[2], par[0]);
   h2->Fill(par[0], par[1]);
+  h0z->Fill(par[1], par[2]);
+  h1z->Fill(par[2], par[0]);
+  h2z->Fill(par[0], par[1]);
  
   return chi2;
 }
@@ -431,18 +441,20 @@ void TemplateFitter::Draw()
   legend_nue->AddEntry(nue_tp,"templates at bestfit");
   legend_nue->Draw();
   c->SaveAs(Form("%s_fit_nue_wCov_%d%d%d_%d_ft_Log.png",name,para,cutNu,cutEv,s));
-/*
-  TFile *f = new TFile(Form("/dune/app/users/qvuong/lownu/Elep_combine/wCov/chi2/%s_chi2_wCov_%d%d%d.root",name,para,cutNu,cutEv));
-  std::cout << "test0" << "\n";
-  TH2D *hc0 = (TH2D*)f->Get("h0;1");
-  TH2D *hc1 = (TH2D*)f->Get("h1;1");
-  TH2D *hc2 = (TH2D*)f->Get("h2;1");
 
-  TH2D *hc0L = (TH2D*)f->Get("h0;2");
-  TH2D *hc1L = (TH2D*)f->Get("h1;2");
-  TH2D *hc2L = (TH2D*)f->Get("h2;2");
-
-  std::cout << "test1" << "\n";
+  TFile *f = new TFile(Form("/dune/app/users/qvuong/lownu/Ev_combine/wCov/chi2/%s_chi2_wCov_%d%d%d.root",name,para,cutNu,cutEv));
+  TH2D *hc0 = (TH2D*)f->Get("h0");
+  TH2D *hc1 = (TH2D*)f->Get("h1");
+  TH2D *hc2 = (TH2D*)f->Get("h2");
+  TH2D *hc0z = (TH2D*)f->Get("h0z");
+  TH2D *hc1z = (TH2D*)f->Get("h1z");
+  TH2D *hc2z = (TH2D*)f->Get("h2z");
+  TH2D *hc0d = (TH2D*)f->Get("h0d");
+  TH2D *hc1d = (TH2D*)f->Get("h1d");
+  TH2D *hc2d = (TH2D*)f->Get("h2d");
+  TH2D *hc0dz = (TH2D*)f->Get("h0dz");
+  TH2D *hc1dz = (TH2D*)f->Get("h1dz");
+  TH2D *hc2dz = (TH2D*)f->Get("h2dz");
  
   double seed1[3][3], seed2[3][3];
   seed1[0][0] = 0.01;
@@ -550,7 +562,6 @@ void TemplateFitter::Draw()
 
   TCanvas *c0 = new TCanvas("c0","",800,600);
   c0->SetLogz(0);
-  hc0->SetMaximum(3E3);
   hc0->Draw("colz");
   h0->Draw("same");
   g0->Draw("same P");
@@ -564,7 +575,6 @@ void TemplateFitter::Draw()
   c0->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d0.png",name,para,cutNu,cutEv,s));
   TCanvas *c1 = new TCanvas("c1","",800,600);
   c1->SetLogz(0);
-  hc1->SetMaximum(3E3);
   hc1->Draw("colz");
   h1->Draw("same");
   g1->Draw("same P");
@@ -578,7 +588,6 @@ void TemplateFitter::Draw()
   c1->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d1.png",name,para,cutNu,cutEv,s));
   TCanvas *c2 = new TCanvas("c2","",800,600);
   c2->SetLogz(0);
-  hc2->SetMaximum(3E3);
   hc2->Draw("colz");
   h2->Draw("same");
   g2->Draw("same P");
@@ -590,62 +599,135 @@ void TemplateFitter::Draw()
   legend2->AddEntry("g2BF","  Bestfit values");
   legend2->Draw();
   c2->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d2.png",name,para,cutNu,cutEv,s));
+  TCanvas *c0z = new TCanvas("c0z","",800,600);
+  c0z->SetLogz(0);
+  hc0z->Draw("colz");
+  h0z->Draw("same");
+  g0->Draw("same P");
+  g0s->Draw("same P");
+  g0BF->Draw("same P");
+  TLegend *legend0z = new TLegend(0.65,0.70,0.9,0.9);
+  legend0z->AddEntry("g0","  True values");
+  legend0z->AddEntry("g0s","  Initial Seeds");
+  legend0z->AddEntry("g0BF","  Bestfit values");
+  legend0z->Draw();
+  c0z->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d0_zoom.png",name,para,cutNu,cutEv,s));
+  TCanvas *c1z = new TCanvas("c1z","",800,600);
+  c1z->SetLogz(0);
+  hc1z->Draw("colz");
+  h1z->Draw("same");
+  g1->Draw("same P");
+  g1s->Draw("same P");
+  g1BF->Draw("same P");
+  TLegend *legend1z = new TLegend(0.65,0.70,0.9,0.9);
+  legend1z->AddEntry("g1","  True values");
+  legend1z->AddEntry("g1s","  Initial Seeds");
+  legend1z->AddEntry("g1BF","  Bestfit values");
+  legend1z->Draw();
+  c1z->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d1_zoom.png",name,para,cutNu,cutEv,s));
+  TCanvas *c2z = new TCanvas("c2z","",800,600);
+  c2z->SetLogz(0);
+  hc2z->Draw("colz");
+  h2z->Draw("same");
+  g2->Draw("same P");
+  g2s->Draw("same P");
+  g2BF->Draw("same P");
+  TLegend *legend2z = new TLegend(0.65,0.70,0.9,0.9);
+  legend2z->AddEntry("g2","  True values");
+  legend2z->AddEntry("g2s","  Initial Seeds");
+  legend2z->AddEntry("g2BF","  Bestfit values");
+  legend2z->Draw();
+  c2z->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d2_zoom.png",name,para,cutNu,cutEv,s));
 
-  TCanvas *c0L = new TCanvas("c0L","",800,600);
-  c0L->SetLogz(1);
-  hc0L->SetMaximum(5E4);
-  hc0L->Draw("colz");
+  TCanvas *c0d = new TCanvas("c0d","",800,600);
+  c0d->SetLogz(0);
+  hc0d->Draw("colz");
   h0->Draw("same");
   g0->Draw("same P");
   g0s->Draw("same P");
   g0BF->Draw("same P");
-  TLegend *legend0L = new TLegend(0.65,0.70,0.9,0.9);
-  legend0L->AddEntry("g0","  True values");
-  legend0L->AddEntry("g0s","  Initial Seeds");
-  legend0L->AddEntry("g0BF","  Bestfit values");
-  legend0L->Draw();
-  c0L->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d0_Log.png",name,para,cutNu,cutEv,s));
-  TCanvas *c1L = new TCanvas("c1L","",800,600);
-  c1L->SetLogz(1);
-  hc1L->SetMaximum(5E4);
-  hc1L->Draw("colz");
+  TLegend *legend0d = new TLegend(0.65,0.70,0.9,0.9);
+  legend0d->AddEntry("g0","  True values");
+  legend0d->AddEntry("g0s","  Initial Seeds");
+  legend0d->AddEntry("g0BF","  Bestfit values");
+  legend0d->Draw();
+  c0d->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d0.png",name,para,cutNu,cutEv,s));
+  TCanvas *c1d = new TCanvas("c1d","",800,600);
+  c1d->SetLogz(0);
+  hc1d->Draw("colz");
   h1->Draw("same");
   g1->Draw("same P");
   g1s->Draw("same P");
   g1BF->Draw("same P");
-  TLegend *legend1L = new TLegend(0.65,0.70,0.9,0.9);
-  legend1L->AddEntry("g1","  True values");
-  legend1L->AddEntry("g1s","  Initial Seeds");
-  legend1L->AddEntry("g1BF","  Bestfit values");
-  legend1L->Draw();
-  c1L->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d1_Log.png",name,para,cutNu,cutEv,s));
-  TCanvas *c2L = new TCanvas("c2L","",800,600);
-  c2L->SetLogz(1);
-  hc2L->SetMaximum(5E4);
-  hc2L->Draw("colz");
+  TLegend *legend1d = new TLegend(0.65,0.70,0.9,0.9);
+  legend1d->AddEntry("g1","  True values");
+  legend1d->AddEntry("g1s","  Initial Seeds");
+  legend1d->AddEntry("g1BF","  Bestfit values");
+  legend1d->Draw();
+  c1d->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d1.png",name,para,cutNu,cutEv,s));
+  TCanvas *c2d = new TCanvas("c2d","",800,600);
+  c2d->SetLogz(0);
+  hc2d->Draw("colz");
   h2->Draw("same");
   g2->Draw("same P");
   g2s->Draw("same P");
   g2BF->Draw("same P");
-  TLegend *legend2L = new TLegend(0.65,0.70,0.9,0.9);
-  legend2L->AddEntry("g2","  True values");
-  legend2L->AddEntry("g2s","  Initial Seeds");
-  legend2L->AddEntry("g2BF","  Bestfit values");
-  legend2L->Draw();
-  c2L->SaveAs(Form("%s_fit_parDraw_wCov_%d%d%d_%d2_Log.png",name,para,cutNu,cutEv,s));
-*/
+  TLegend *legend2d = new TLegend(0.65,0.70,0.9,0.9);
+  legend2d->AddEntry("g2","  True values");
+  legend2d->AddEntry("g2s","  Initial Seeds");
+  legend2d->AddEntry("g2BF","  Bestfit values");
+  legend2d->Draw();
+  c2d->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d2.png",name,para,cutNu,cutEv,s));
+  TCanvas *c0dz = new TCanvas("c0dz","",800,600);
+  c0dz->SetLogz(0);
+  hc0dz->Draw("colz");
+  h0z->Draw("same");
+  g0->Draw("same P");
+  g0s->Draw("same P");
+  g0BF->Draw("same P");
+  TLegend *legend0dz = new TLegend(0.65,0.70,0.9,0.9);
+  legend0dz->AddEntry("g0","  True values");
+  legend0dz->AddEntry("g0s","  Initial Seeds");
+  legend0dz->AddEntry("g0BF","  Bestfit values");
+  legend0dz->Draw();
+  c0dz->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d0_zoom.png",name,para,cutNu,cutEv,s));
+  TCanvas *c1dz = new TCanvas("c1dz","",800,600);
+  c1dz->SetLogz(0);
+  hc1dz->Draw("colz");
+  h1z->Draw("same");
+  g1->Draw("same P");
+  g1s->Draw("same P");
+  g1BF->Draw("same P");
+  TLegend *legend1dz = new TLegend(0.65,0.70,0.9,0.9);
+  legend1dz->AddEntry("g1","  True values");
+  legend1dz->AddEntry("g1s","  Initial Seeds");
+  legend1dz->AddEntry("g1BF","  Bestfit values");
+  legend1dz->Draw();
+  c1dz->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d1_zoom.png",name,para,cutNu,cutEv,s));
+  TCanvas *c2dz = new TCanvas("c2dz","",800,600);
+  c2dz->SetLogz(0);
+  hc2dz->Draw("colz");
+  h2z->Draw("same");
+  g2->Draw("same P");
+  g2s->Draw("same P");
+  g2BF->Draw("same P");
+  TLegend *legend2dz = new TLegend(0.65,0.70,0.9,0.9);
+  legend2dz->AddEntry("g2","  True values");
+  legend2dz->AddEntry("g2s","  Initial Seeds");
+  legend2dz->AddEntry("g2BF","  Bestfit values");
+  legend2dz->Draw();
+  c2dz->SaveAs(Form("%s_fit_parDraw_diff_wCov_%d%d%d_%d2_zoom.png",name,para,cutNu,cutEv,s));
+
   gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
 
   TFile *out = new TFile(Form("%s_fitResults_wCov_%d%d%d_%d.root",name,para,cutNu,cutEv,s),"RECREATE");
   h0->Write();
   h1->Write();
   h2->Write();
-/*
   g0BF->Write();
   g1BF->Write();
   g2BF->Write();
   out->Close();
-*/
 }
 
 void TemplateFitter::TrueDraw()

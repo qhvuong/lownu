@@ -11,12 +11,12 @@ int main()
   //for(oscpar[0]=1; oscpar[0]<3; oscpar[0]++) {
   TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",oscpar),"READ");
   TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",oscpar),"READ");
-  //for(oscpar[1]=0; oscpar[1]<4; oscpar[1]++) {
-  //if(oscpar[1] != 0 && oscpar[1] != 3) continue;
-  nuCut = 3;
+  for(nuCut = 0; nuCut < 4; nuCut ++) {
+  if(nuCut != 0 && nuCut != 3) continue;
+  //nuCut = 3;
 
-  for(EvCut=0; EvCut<3; EvCut++) {
-  //if(EvCut == 1) continue;
+  //for(EvCut=0; EvCut<3; EvCut++) {
+  EvCut = 2;
 
   TH2D* CC_hm = (TH2D*)CC_f->Get(Form("m_h%sVsEv%d",var,nuCut));
   TH2D* CC_hm_nc = (TH2D*)CC_f->Get(Form("nc_m_h%sVsEv%d",var,nuCut));
@@ -59,9 +59,11 @@ int main()
   tf.setPara( var, oscpar, nuCut, EvCut, seed );
 
   tf.Draw();
+  //}
+  //}
+
   }
-  //}
-  //}
+
 }
 
 

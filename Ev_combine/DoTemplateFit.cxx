@@ -7,12 +7,15 @@ int main()
 {
   char var[20] = "EvReco";
   int oscpar, nuCut, EvCut, seed;
-  oscpar = 1;
+  //for(oscpar = 1; oscpar < 3; oscpar ++) {
+  oscpar = 2;
   TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",oscpar),"READ");
   TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",oscpar),"READ");
-  nuCut = 0;
-  for(EvCut=0; EvCut<3; EvCut++) {
-  //EvCut = 1;
+  for(nuCut = 0; nuCut < 4; nuCut ++) {
+  if(nuCut != 0 && nuCut != 3) continue;
+  //nuCut = 3;
+  //for(EvCut=0; EvCut<3; EvCut++) {
+  EvCut = 2;
   for(seed=0; seed<3; seed++) {
 
   TH2D* CC_hm = (TH2D*)CC_f->Get(Form("m_h%sVsEv%d",var,nuCut));
@@ -54,15 +57,16 @@ int main()
 
   tf.setEnergyBins( energy_bins );
   tf.setPara( var, oscpar, nuCut, EvCut, seed );
+  //tf.getPar( oscpar );
 
   double bf_dm2, bf_Uee2, bf_Umm2;
   bool isOK = tf.doFit( bf_Uee2, bf_Umm2 , bf_dm2);
   printf( "nue Best-fit Uee2 = %f, Umm2 = %f, dm2 = %f\n", bf_Uee2, bf_Umm2, bf_dm2 );
-  tf.Draw();
+  //tf.Draw();
   tf.TrueDraw();
-
   }
   }
+  //}
   //}
 
 }

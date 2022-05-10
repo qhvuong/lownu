@@ -10,8 +10,10 @@ int main()
   oscpar = 2;
   TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",oscpar),"READ");
   TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",oscpar),"READ");
-  nuCut = 0;
-  //for(EvCut=1; EvCut<3; EvCut++) {
+  for(nuCut = 0; nuCut < 4; nuCut ++) {
+  if(nuCut != 0 && nuCut != 3) continue;
+  //nuCut = 0;
+  //for(EvCut=0; EvCut<3; EvCut++) {
   EvCut = 2;
   for(seed=0; seed<3; seed++) {
 
@@ -72,7 +74,7 @@ int main()
   tf.Draw();
   tf.TrueDraw();
   }
-  //}
+  }
 }
 
 

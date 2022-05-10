@@ -117,20 +117,21 @@ void ElepCov()
   char name[20] = "ElepReco";
   int para, cutNu, cutEv;
 
-  para=2;
+  para=1;
 
   //for(para = 1; para <3; para++) {
   TFile *f     = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",para));
   TFile *f_nue = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",para));
-  //for(cutNu = 0; cutNu < 4; cutNu++) {
-  //if(cutNu != 0 && cutNu != 3 ) continue;
-  cutNu = 3;
+  for(cutNu = 0; cutNu < 4; cutNu++) {
+  if(cutNu != 0 && cutNu != 3 ) continue;
+  //cutNu = 3;
   //std::cout << cutNu << "\n";
-  for(cutEv = 0; cutEv < 3; cutEv++) {
-  TH2D *CC_m  = (TH2D*)f->Get(Form("m_hElepVsEv%d_cov",cutNu));
-  TH2D *CC_e  = (TH2D*)f->Get(Form("e_hElepVsEv%d_cov",cutNu));
-  TH2D *nue_m = (TH2D*)f_nue->Get(Form("m_hElepVsEv%d_cov",cutEv));
-  TH2D *nue_e = (TH2D*)f_nue->Get(Form("e_hElepVsEv%d_cov",cutEv));
+  //for(cutEv = 0; cutEv < 3; cutEv++) {
+  cutEv = 0;
+  TH2D *CC_m  = (TH2D*)f->Get(Form("m_h%sVsEv%d_cov",name,cutNu));
+  TH2D *CC_e  = (TH2D*)f->Get(Form("e_h%sVsEv%d_cov",name,cutNu));
+  TH2D *nue_m = (TH2D*)f_nue->Get(Form("m_h%sVsEv%d_cov",name,cutEv));
+  TH2D *nue_e = (TH2D*)f_nue->Get(Form("e_h%sVsEv%d_cov",name,cutEv));
 
   TH1D *tp_m[n_mu];
   TH1D *tp_e[n_e];
@@ -334,7 +335,7 @@ void ElepCov()
   double nu, Ev;
   if(cutNu == 0)      nu = 10.0;
   else if(cutNu == 3) nu = 0.3;
-  if(cutEv == 0)      Ev = 1.0;
+  if(cutEv == 0)      Ev = 3.0;
   else if(cutEv == 1) Ev = 0.8;
   else if(cutEv == 2) Ev = 0.5;
 
@@ -365,9 +366,9 @@ void ElepCov()
   hcv->Write();
   hcr->Write();
   out->Close();
-  //}
-  //}
   }
+  //}
+  //}
 }
 
 /*

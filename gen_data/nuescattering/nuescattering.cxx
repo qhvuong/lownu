@@ -21,7 +21,7 @@ int main()
   TChain * tree = new TChain( "tree", "tree" );
   TChain * meta = new TChain( "meta", "meta" );
 
-  for(int i = 10; i<12; i++){
+  for(int i = 10; i<15; i++){
   tree->Add( Form("/pnfs/dune/persistent/users/marshalc/nue_study/FHC/nueFHC_0%d.root",i) );
   meta->Add( Form("/pnfs/dune/persistent/users/marshalc/nue_study/FHC/nueFHC_0%d.root",i) );
   std::cout << "Nue File number:" << i << "\n";
@@ -209,21 +209,31 @@ int main()
   double e_C_LR = s2tW;
   double y, sigma_m, sigma_e;
 
-  double Uee2 = 0.04;
-  double Umm2 = 0.01;
+  double Uee2, Umm2, dm2;
+
+  int para = 1;
+  if(para == 1) {
+  Uee2 = 0.01;
+  Umm2 = 0.0016;
+  dm2 = 1.3; //eV2
+  }
+  if(para == 2) {
+  Uee2 = 0.04;
+  Umm2 = 0.01;
+  dm2 = 6.0; //eV2
+  }
   double s2ee2 = 4*Uee2*(1 - Uee2); 
   double s2mm2 = 4*Umm2*(1 - Umm2); 
   double s2me2 = 4*Uee2*Umm2;
-  double dm2 = 6.0; //eV2
   double L = 500; //m
   double del, pmumu, pmue, pee;
 
   double me = 510;  //keV
   double Ev_reco;
 
-  //const int N = tree->GetEntries();
-  const int N = 10000;
-  scalePOT = 10;
+  const int N = tree->GetEntries();
+  //const int N = 10000;
+  //scalePOT = 10;
 
   for( int ii = 0; ii < N; ++ii )
   {
@@ -268,7 +278,7 @@ int main()
 
     BthetaVsEe->Fill(E[0],Btheta_sm);  
   
-    if(E[0]*Btheta_sm*Btheta_sm/1E3<1.){
+    if(E[0]*Btheta_sm*Btheta_sm/1E3<3.){
       hEvRes0->Fill((Ev_reco-Enu)/Enu);
       if(pdg[1] == 14){
         //muon to muon ("survival")
@@ -512,13 +522,13 @@ int main()
   gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
 
   e_hElep0_w->SetStats(0);
-  e_hElep0_w->SetTitle("nu+e nue weighted Elep_reco (Etheta2 < 1.0MeV)");
+  e_hElep0_w->SetTitle("nu+e nue weighted Elep_reco (Etheta2 < 3.0MeV)");
   e_hElep0_w->GetXaxis()->SetTitle("Elep_reco (GeV)");
   e_hElep0_w->SetMarkerStyle(8);
   e_hElep0_w->SetMarkerSize(1.0);
   e_hElep0_w->SetMarkerColor(kBlack);
   m_hElep0_w->SetStats(0);
-  m_hElep0_w->SetTitle("nu+e numu weighted Elep_reco (Etheta2 < 1.0MeV)");
+  m_hElep0_w->SetTitle("nu+e numu weighted Elep_reco (Etheta2 < 3.0MeV)");
   m_hElep0_w->GetXaxis()->SetTitle("Elep_reco (GeV)");
   m_hElep0_w->SetMarkerStyle(8);
   m_hElep0_w->SetMarkerSize(1.0);
@@ -549,7 +559,7 @@ int main()
   m_hElep2_w->SetMarkerColor(kBlack);
 
   hElep0_w_ft->SetStats(0);
-  hElep0_w_ft->SetTitle("fluctuated nu+e Elep target (Etheta2 < 1.0MeV)");
+  hElep0_w_ft->SetTitle("fluctuated nu+e Elep target (Etheta2 < 3.0MeV)");
   hElep0_w_ft->GetXaxis()->SetTitle("Elep_reco (GeV)");
   hElep0_w_ft->SetLineColor(kBlack);
   hElep1_w_ft->SetStats(0);
@@ -612,10 +622,10 @@ int main()
   mm_hElep2_w->SetMarkerSize(0.5);
   mm_hElep2_w->SetMarkerColor(kRed);
 
-  THStack *e_hsElep0_w = new THStack("e_hsElep0_w","nu+e oscillated + unoscillated nue weighted Elep_reco (Etheta2 < 1.0MeV); Elep_reco (GeV); count");
+  THStack *e_hsElep0_w = new THStack("e_hsElep0_w","nu+e oscillated + unoscillated nue weighted Elep_reco (Etheta2 < 3.0MeV); Elep_reco (GeV); count");
   e_hsElep0_w->Add(me_hElep0_w);
   e_hsElep0_w->Add(ee_hElep0_w);
-  THStack *m_hsElep0_w = new THStack("m_hsElep0_w","nu+e oscillated + unoscillated numu weighted Elep_reco (Etheta2 < 1.0MeV); Elep_reco (GeV); count");
+  THStack *m_hsElep0_w = new THStack("m_hsElep0_w","nu+e oscillated + unoscillated numu weighted Elep_reco (Etheta2 < 3.0MeV); Elep_reco (GeV); count");
   m_hsElep0_w->Add(em_hElep0_w);
   m_hsElep0_w->Add(mm_hElep0_w);
   THStack *e_hsElep1_w = new THStack("e_hsElep1_w","nu+e oscillated + unoscillated nue weighted Elep_reco (Etheta2 < 0.8MeV); Elep_reco (GeV); count");
@@ -681,8 +691,7 @@ int main()
   lm2->AddEntry(em_hElep2_w,"true oscillated e->mu");
   lm2->AddEntry(mm_hElep2_w,"true oscillated + unoscillated");
   lm2->Draw();
-  cTarget_Elep->SaveAs("true_nue_Elep_target_2.png");
-
+  cTarget_Elep->SaveAs(Form("true_nue_Elep_target_%d.png",para));
 
   os_hElep0_w->SetStats(0);
   os_hElep0_w->SetMarkerStyle(21);
@@ -752,13 +761,13 @@ int main()
   l2->AddEntry(os_hElep2_w,"true oscillated mu->e & e->mu");
   l2->AddEntry(hElep2_w,"true target");
   l2->Draw();
-  cElep_w_sum->SaveAs("true_nue_Elep_target_2_sum.png");
+  cElep_w_sum->SaveAs(Form("true_nue_Elep_target_%d_sum.png",para));
 
 
-  m_hElepVsEv0->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  m_hElepVsEv0->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 3.0MeV)");
   m_hElepVsEv0->GetXaxis()->SetTitle("true Ev (GeV)");
   m_hElepVsEv0->GetYaxis()->SetTitle("Elep_reco (GeV)");
-  e_hElepVsEv0->SetTitle("nu+e nue Elep_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  e_hElepVsEv0->SetTitle("nu+e nue Elep_reco Vs true Ev (Etheta2 < 3.0MeV)");
   e_hElepVsEv0->GetXaxis()->SetTitle("true Ev (GeV)");
   e_hElepVsEv0->GetYaxis()->SetTitle("Elep_reco (GeV)");
   m_hElepVsEv1->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 0.8MeV)");
@@ -787,13 +796,13 @@ int main()
   m_hElepVsEv1->Draw("colz");
   cElepVsEv->cd(6);
   m_hElepVsEv2->Draw("colz");
-  cElepVsEv->SaveAs("true_nue_Elep_templates_2.png");
+  cElepVsEv->SaveAs(Form("true_nue_Elep_templates_%d.png",para));
 
 
-  m_hElepVsEv0_cov->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  m_hElepVsEv0_cov->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 3.0MeV)");
   m_hElepVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
   m_hElepVsEv0_cov->GetYaxis()->SetTitle("Elep_reco (GeV)");
-  e_hElepVsEv0_cov->SetTitle("nu+e nue Elep_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  e_hElepVsEv0_cov->SetTitle("nu+e nue Elep_reco Vs true Ev (Etheta2 < 3.0MeV)");
   e_hElepVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
   e_hElepVsEv0_cov->GetYaxis()->SetTitle("Elep_reco (GeV)");
   m_hElepVsEv1_cov->SetTitle("nu+e numu Elep_reco Vs true Ev (Etheta2 < 0.8MeV)");
@@ -822,17 +831,17 @@ int main()
   m_hElepVsEv1_cov->Draw("colz");
   cElepVsEv_cov->cd(6);
   m_hElepVsEv2_cov->Draw("colz");
-  cElepVsEv_cov->SaveAs("cov_nue_Elep_2.png");
+  cElepVsEv_cov->SaveAs(Form("cov_nue_Elep_%d.png",para));
 
 
   e_hEvReco0->SetStats(0);
-  e_hEvReco0->SetTitle("nu+e nue weighted Ev_reco (Etheta2 < 1.0MeV)");
+  e_hEvReco0->SetTitle("nu+e nue weighted Ev_reco (Etheta2 < 3.0MeV)");
   e_hEvReco0->GetXaxis()->SetTitle("Ev_reco (GeV)");
   e_hEvReco0->SetMarkerStyle(8);
   e_hEvReco0->SetMarkerSize(1.0);
   e_hEvReco0->SetMarkerColor(kBlack);
   m_hEvReco0->SetStats(0);
-  m_hEvReco0->SetTitle("nu+e numu weighted Ev_reco (Etheta2 < 1.0MeV)");
+  m_hEvReco0->SetTitle("nu+e numu weighted Ev_reco (Etheta2 < 3.0MeV)");
   m_hEvReco0->GetXaxis()->SetTitle("Ev_reco (GeV)");
   m_hEvReco0->SetMarkerStyle(8);
   m_hEvReco0->SetMarkerSize(1.0);
@@ -864,7 +873,7 @@ int main()
 
 
   hEvReco0_ft->SetStats(0);
-  hEvReco0_ft->SetTitle("fluctuated nu+e Ev_reco target (Etheta2 < 1.0MeV)");
+  hEvReco0_ft->SetTitle("fluctuated nu+e Ev_reco target (Etheta2 < 3.0MeV)");
   hEvReco0_ft->GetXaxis()->SetTitle("Ev_reco (GeV)");
   hEvReco0_ft->SetLineColor(kBlack);
   hEvReco1_ft->SetStats(0);
@@ -930,10 +939,10 @@ int main()
   mm_hEvReco2->SetMarkerSize(0.5);
   mm_hEvReco2->SetMarkerColor(kRed);
 
-  THStack *e_hsEv0 = new THStack("e_hsEv0","nu+e oscillated + unoscillated nue weighted Ev_reco (Etheta2 < 1.0MeV); Ev_reco (GeV); count");
+  THStack *e_hsEv0 = new THStack("e_hsEv0","nu+e oscillated + unoscillated nue weighted Ev_reco (Etheta2 < 3.0MeV); Ev_reco (GeV); count");
   e_hsEv0->Add(me_hEvReco0);
   e_hsEv0->Add(ee_hEvReco0);
-  THStack *m_hsEv0 = new THStack("m_hsEv0","nu+e oscillated + unoscillated numu weighted Ev_reco (Etheta2 < 1.0MeV); Ev_reco (GeV); count");
+  THStack *m_hsEv0 = new THStack("m_hsEv0","nu+e oscillated + unoscillated numu weighted Ev_reco (Etheta2 < 3.0MeV); Ev_reco (GeV); count");
   m_hsEv0->Add(em_hEvReco0);
   m_hsEv0->Add(mm_hEvReco0);
   THStack *e_hsEv1 = new THStack("e_hsEv1","nu+e oscillated + unoscillated nue weighted Ev_reco (Etheta2 < 0.8MeV); Ev_reco (GeV); count");
@@ -999,7 +1008,7 @@ int main()
   lmEv2->AddEntry(em_hEvReco2,"true oscillated mu->e");
   lmEv2->AddEntry(mm_hEvReco2,"true oscillated + unoscillated");
   lmEv2->Draw();
-  cTarget_Ev->SaveAs("true_nue_Ev_target_2.png");
+  cTarget_Ev->SaveAs(Form("true_nue_Ev_target_%d.png",para));
 
   os_hEvReco0->SetStats(0);
   os_hEvReco0->SetMarkerStyle(21);
@@ -1069,12 +1078,12 @@ int main()
   lEv2->AddEntry(os_hEvReco2,"true oscillated mu->e & e->mu");
   lEv2->AddEntry(unos_hEvReco2,"true target");
   lEv2->Draw();
-  cEv_sum->SaveAs("true_nue_Ev_target_2_sum.png");
+  cEv_sum->SaveAs(Form("true_nue_Ev_target_%d_sum.png",para));
   
-  m_hEvRecoVsEv0->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 1.5MeV)");
+  m_hEvRecoVsEv0->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 3.0MeV)");
   m_hEvRecoVsEv0->GetXaxis()->SetTitle("true Ev (GeV)");
   m_hEvRecoVsEv0->GetYaxis()->SetTitle("Ev_reco (GeV)");
-  e_hEvRecoVsEv0->SetTitle("nu+e nue Ev_reco Vs true Ev (Etheta2 < 1.5MeV)");
+  e_hEvRecoVsEv0->SetTitle("nu+e nue Ev_reco Vs true Ev (Etheta2 < 3.0MeV)");
   e_hEvRecoVsEv0->GetXaxis()->SetTitle("true Ev (GeV)");
   e_hEvRecoVsEv0->GetYaxis()->SetTitle("Ev_reco (GeV)");
   m_hEvRecoVsEv1->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 0.8MeV)");
@@ -1103,12 +1112,12 @@ int main()
   m_hEvRecoVsEv1->Draw("colz");
   cEvVsEv->cd(6);
   m_hEvRecoVsEv2->Draw("colz");
-  cEvVsEv->SaveAs("true_nue_Ev_templates_2.png");
+  cEvVsEv->SaveAs(Form("true_nue_Ev_templates_%d.png",para));
 
-  m_hEvRecoVsEv0_cov->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  m_hEvRecoVsEv0_cov->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 3.0MeV)");
   m_hEvRecoVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
   m_hEvRecoVsEv0_cov->GetYaxis()->SetTitle("Ev_reco (GeV)");
-  e_hEvRecoVsEv0_cov->SetTitle("nu+e nue Ev_reco Vs true Ev (Etheta2 < 1.0MeV)");
+  e_hEvRecoVsEv0_cov->SetTitle("nu+e nue Ev_reco Vs true Ev (Etheta2 < 3.0MeV)");
   e_hEvRecoVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
   e_hEvRecoVsEv0_cov->GetYaxis()->SetTitle("Ev_reco (GeV)");
   m_hEvRecoVsEv1_cov->SetTitle("nu+e numu Ev_reco Vs true Ev (Etheta2 < 0.8MeV)");
@@ -1137,7 +1146,7 @@ int main()
   m_hEvRecoVsEv1_cov->Draw("colz");
   cEvVsEv_cov->cd(6);
   m_hEvRecoVsEv2_cov->Draw("colz");
-  cEvVsEv_cov->SaveAs("cov_nue_Ev_2.png");
+  cEvVsEv_cov->SaveAs(Form("cov_nue_Ev_%d.png",para));
 
   TF1 *cut0 = new TF1("cut0","sqrt(1.0*1E3/x)",0.5,60);
   TF1 *cut1 = new TF1("cut1","sqrt(0.8*1E3/x)",0.5,60);
@@ -1160,11 +1169,11 @@ int main()
   cBthetaVsEe->SetLogx();
   BthetaVsEe->Draw("colz");
   cut2->Draw("same");
-  cBthetaVsEe->SaveAs("nue_BthetaVsEe_2.png");
+  cBthetaVsEe->SaveAs(Form("nue_BthetaVsEe_%d.png",para));
 
-  hEvRes0->SetTitle("(Ev_reco - Ev_true)/Ev_true (Etheta2 < 3MeV)");
+  hEvRes0->SetTitle("(Ev_reco - Ev_true)/Ev_true (Etheta2 < 3.0MeV)");
   hEvRes0->GetXaxis()->SetTitle("(Ev_reco - Ev_true)/Ev_true");
-  hEvRes1->SetTitle("(Ev_reco - Ev_true)/Ev_true (Etheta2 < 1MeV)");
+  hEvRes1->SetTitle("(Ev_reco - Ev_true)/Ev_true (Etheta2 < 0.8MeV)");
   hEvRes1->GetXaxis()->SetTitle("(Ev_reco - Ev_true)/Ev_true");
   hEvRes2->SetTitle("(Ev_reco - Ev_true)/Ev_true (Etheta2 < 0.5MeV)");
   hEvRes2->GetXaxis()->SetTitle("(Ev_reco - Ev_true)/Ev_true");
@@ -1176,9 +1185,9 @@ int main()
   hEvRes1->Draw();
   cEvRes->cd(3);
   hEvRes2->Draw();
-  cEvRes->SaveAs("EvRes_2.png");
+  cEvRes->SaveAs(Form("nue_EvRes_%d.png",para));
 
-  TFile *out = new TFile("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_2.root","RECREATE");
+  TFile *out = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",para),"RECREATE");
   e_hElep0_w->Write();
   me_hElep0_w->Write();
   ee_hElep0_w->Write();

@@ -7,11 +7,13 @@ int main()
 {
   char var[20] = "EvReco";
   int oscpar, nuCut, EvCut, seed;
-  oscpar = 2;
+  oscpar = 1;
   TFile *CC_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",oscpar),"READ");
   TFile *nue_f = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/nuescattering/nue_output_%d.root",oscpar),"READ");
+  //for(nuCut = 0; nuCut < 4; nuCut ++) {
+  //if(nuCut != 0 && nuCut != 3) continue;
   nuCut = 0;
-  //for(EvCut=1; EvCut<3; EvCut++) {
+  //for(EvCut=0; EvCut<3; EvCut++) {
   EvCut = 2;
 
   TH2D* CC_hm = (TH2D*)CC_f->Get(Form("m_h%sVsEv%d",var,nuCut));
@@ -51,6 +53,7 @@ int main()
   for(int i=0; i<300; i++) {
     for(int j=0; j<300; j++) {
       cov_bins[i][j] = cov->GetBinContent(i+1, j+1);
+
     }
   }
 

@@ -20,7 +20,7 @@ int main()
   TChain * tree = new TChain( "cafTree", "cafTree" );
   TChain * meta = new TChain( "meta", "meta" );
   
-  for(int i = 200; i<250; i++){
+  for(int i = 200; i<201; i++){
   tree->Add( Form("/pnfs/dune/persistent/users/LBL_TDR/CAFs/v4/ND_FHC_FV_%d.root",i) );
   meta->Add( Form("/pnfs/dune/persistent/users/LBL_TDR/CAFs/v4/ND_FHC_FV_%d.root",i) ); // make certain this is the exact same file(s)
   std::cout << "File number:" << i << "\n";
@@ -166,13 +166,22 @@ int main()
   double nu, reco_nu;
   double del, pmue, pmumu, pee;
   double LepE_sm, Ev_sm;
+  double Uee2, Umm2, dm2;
 
-  double Uee2 = 0.01;
-  double Umm2 = 0.0016;
+  for(int para=1; para<3; para++) {
+  if(para == 1){
+  Uee2 = 0.01;
+  Umm2 = 0.0016;
+  dm2 = 1.3; //eV2
+  }
+  else if(para == 2){
+  Uee2 = 0.04;
+  Umm2 = 0.01;
+  dm2 = 6.0; //eV2
+  }
   double s2ee2 = 4*Uee2*(1 - Uee2); 
   double s2mm2 = 4*Umm2*(1 - Umm2); 
   double s2me2 = 4*Uee2*Umm2;
-  double dm2 = 1.3; //eV2
   double L = 500; //m
 
   TRandom *r1 = new TRandom(8888);
@@ -426,7 +435,7 @@ int main()
   lm3->AddEntry(em_hElep_w3,"oscillated e->mu");
   lm3->AddEntry(mm_hElep_w3,"oscilated + unoscillated");
   lm3->Draw();
-  cElep_Target->SaveAs("true_CC_Elep_target_1.png");
+  cElep_Target->SaveAs(Form("true_CC_Elep_target_%d.png",para));
 
   e_hEvReco_w0_ft->SetStats(0);
   e_hEvReco_w0_ft->SetTitle("fluctuated nueCC Ev_reco target (nu<10.0)");
@@ -522,7 +531,7 @@ int main()
   lmEv3->AddEntry(em_hEvReco_w3,"oscillated e->mu");
   lmEv3->AddEntry(mm_hEvReco_w3,"oscilated + unoscillated");
   lmEv3->Draw();
-  cEv_Target->SaveAs("true_CC_Ev_target_1.png");
+  cEv_Target->SaveAs(Form("true_CC_Ev_target_%d.png",para));
 
   TCanvas *cEv_Target1 = new TCanvas("cEv_Target1","",1800,1400);
   cEv_Target1->Divide(2,2);
@@ -562,7 +571,7 @@ int main()
   lmEv31->AddEntry(em_hEvReco_w3,"oscillated e->mu");
   lmEv31->AddEntry(mm_hEvReco_w3,"oscilated + unoscillated");
   lmEv31->Draw();
-  cEv_Target1->SaveAs("true_CC_Ev_target_1_Log.png");
+  cEv_Target1->SaveAs(Form("true_CC_Ev_target_%d_Log.png",para));
 
   e_hElep_w0->SetTitle("nue weighted Elep_reco (nu<10.0)");
   e_hElep_w0->GetXaxis()->SetTitle("Elep_reco");
@@ -614,7 +623,7 @@ int main()
   nc_m_hElepVsEv3->Draw("colz");
   cElepVsEv->cd(6);
   e_hElepVsEv3->Draw("colz");
-  cElepVsEv->SaveAs("true_CC_Elep_templates_1.png");
+  cElepVsEv->SaveAs(Form("true_CC_Elep_templates_%d.png",para));
 
   m_hEvRecoVsEv0->SetTitle("CC numu Ev_reco Vs true Ev (nu<10.0)");
   m_hEvRecoVsEv0->GetXaxis()->SetTitle("true Ev (GeV)");
@@ -648,7 +657,7 @@ int main()
   nc_m_hEvRecoVsEv3->Draw("colz");
   cEvVsEv->cd(6);
   e_hEvRecoVsEv3->Draw("colz");
-  cEvVsEv->SaveAs("true_CC_Ev_templates_1.png");
+  cEvVsEv->SaveAs(Form("true_CC_Ev_templates_%d.png",para));
 
   m_hElepVsEv0_cov->SetTitle("CC numu Elep_reco Vs true Ev (nu<10.0)");
   m_hElepVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
@@ -672,7 +681,7 @@ int main()
   m_hElepVsEv3_cov->Draw("colz");
   cElepVsEv_cov->cd(4);
   e_hElepVsEv3_cov->Draw("colz");
-  cElepVsEv_cov->SaveAs("cov_CC_Elep_1.png");
+  cElepVsEv_cov->SaveAs(Form("cov_CC_Elep_%d.png",para));
 
   m_hEvRecoVsEv0_cov->SetTitle("CC numu Ev_reco Vs true Ev (nu<10.0)");
   m_hEvRecoVsEv0_cov->GetXaxis()->SetTitle("true Ev (GeV)");
@@ -696,9 +705,9 @@ int main()
   m_hEvRecoVsEv3_cov->Draw("colz");
   cEvVsEv_cov->cd(4);
   e_hEvRecoVsEv3_cov->Draw("colz");
-  cEvVsEv_cov->SaveAs("cov_CC_Ev_1.png");
+  cEvVsEv_cov->SaveAs(Form("cov_CC_Ev_%d.png",para));
 
-  TFile *out = new TFile("/dune/app/users/qvuong/lownu/gen_data/CC/output_1.root","RECREATE");
+  TFile *out = new TFile(Form("/dune/app/users/qvuong/lownu/gen_data/CC/output_%d.root",para),"RECREATE");
   e_hElep_w0->Write();
   e_hElep_w3->Write();
   e_hElep_w0_ft->Write();
@@ -753,7 +762,10 @@ int main()
   e_hEvRecoVsEv0_cov->Write();
   e_hEvRecoVsEv3_cov->Write();
   out->Close();
-  
+
+  gStyle->SetPalette(kColorPrintableOnGrey); TColor::InvertPalette();
+  }  
+
   return(0);
 
 }
